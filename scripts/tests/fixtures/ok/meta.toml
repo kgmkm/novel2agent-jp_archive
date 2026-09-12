@@ -1,0 +1,9 @@
+[work]
+title = "テスト作品"
+genre = "現代ファンタジー"
+status = "writing"
+
+[[chapters]]
+number = 1
+plot = "plot/plot-ch01.toml"
+status = "written"

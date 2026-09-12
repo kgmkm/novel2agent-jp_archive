@@ -1,2 +1,3 @@
 # 再生成可能な派生物
 .context/
+__pycache__/

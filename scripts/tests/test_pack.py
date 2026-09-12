@@ -1,0 +1,145 @@
+"""scripts/tests/test_pack.py — pack.py の受け入れテスト (schema §6.5)
+
+- versions の重複・逆転解決が仕様通り
+- 未回収伏線の抽出漏れなし（resolved_at 有無の境界）
+- budget 制御（6.3 削り順）
+- established ロールアップで proposed が残る
+- --check 鮮度チェック
+"""
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).parent
+SCRIPT = HERE.parent / "pack.py"
+SAMPLE_GEN = HERE / "sample_project.py"
+WORK = HERE / ".work"
+PY = sys.executable
+
+
+@pytest.fixture(scope="module")
+def sample():
+    dst = WORK / "pack_sample"
+    shutil.rmtree(dst, ignore_errors=True)
+    proc = subprocess.run([PY, str(SAMPLE_GEN), str(dst)],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    return dst
+
+
+def run(pack_sample: Path, *extra):
+    proc = subprocess.run([PY, str(SCRIPT), "--project-dir", str(pack_sample), *extra],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def ctx_of(sample: Path, n: int) -> str:
+    return (sample / ".context" / f"ch{n:02d}.md").read_text(encoding="utf-8")
+
+
+def test_ch03_versions_resolved(sample):
+    code, out = run(sample, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(sample, 3)
+    # chara-001 は 3章から age=19 (versions)
+    m = re.search(r"### chara-001:.*?年齢: (\d+)", ctx, re.S)
+    assert m and m.group(1) == "19", "chara-001 の 3章時点の年齢は 19"
+
+
+def test_unresolved_foreshadowing_included(sample):
+    code, out = run(sample, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(sample, 3)
+    assert "未回収伏線" in ctx
+    assert "古い日記" in ctx            # fs-001 (resolve_chapter=3, 未回収)
+    assert "203号室へは戻るな" in ctx   # fs-002
+
+
+def test_resolved_foreshadowing_excluded(sample):
+    # fs-001 を回収済みにした複製で確認
+    dst = WORK / "pack_resolved"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    plot = dst / "plot" / "plot-ch01.toml"
+    plot.write_text(plot.read_text(encoding="utf-8")
+                    .replace("resolve_chapter = 3\n", "resolve_chapter = 3\nresolved_at = 3\n"),
+                    encoding="utf-8")
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    assert "古い日記" not in ctx  # resolved_at 付きは pack に出ない
+
+
+def test_established_recent_full_and_proposed_kept(sample):
+    code, out = run(sample, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(sample, 3)
+    # 直近 (2章) の proposed は全件・【未確定】マーク付きで残る
+    assert "【未確定】2章: 老婦人は美咲の祖母の名を口にした" in ctx
+    # confirmed 1章・2章は出る
+    assert "美咲が臼井市に引っ越した" in ctx
+    assert "鏡が一瞬曇った" in ctx
+
+
+def test_established_rollup_for_old_chapters(sample):
+    # 1章を 3章から 3章以上前に見せるには章番号を操作するのが確実。
+    # 4章用コンテキストだと 1章は N-3 以前 → ロールアップ表記になる
+    dst = WORK / "pack_rollup"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    (dst / "plot" / "plot-ch04.toml").write_text(
+        'id = "plot-ch04"\nchapter = 4\ntitle = "4章" \n'
+        '[[scenes]]\ntitle = "t"\nlocation = "l"\npov = "chara-001"\n'
+        'characters = ["chara-001"]\ncontent = "c"\n', encoding="utf-8")
+    meta = dst / "meta.toml"
+    meta.write_text(meta.read_text(encoding="utf-8").replace(
+        'status = "draft"\n',
+        'status = "draft"\n\n[[chapters]]\nnumber = 4\nplot = "plot/plot-ch04.toml"\nstatus = "draft"\n',
+        1), encoding="utf-8")
+    code, out = run(dst, "--chapter", "4")
+    assert code == 0, out
+    ctx = ctx_of(dst, 4)
+    assert "1章（ロールアップ）: 美咲が臼井市に引っ越した" in ctx
+    # 2章は直近2章分（N-2=2）なので全件のまま
+    assert "鏡が一瞬曇った" in ctx
+
+
+def test_budget_trims_last_chapter_tail(sample):
+    # 全パック約794字 → budget 700 では本文末尾を削り、なお超過なら1章 summary が落ちる
+    code, out = run(sample, "--chapter", "3", "--budget", "700")
+    assert code == 0, out
+    ctx = ctx_of(sample, 3)
+    # priority 1〜4 は全員残る（メタ・キャラ・制約・伏線・established）
+    assert "禁止語彙" in ctx
+    assert "未回収伏線" in ctx
+    assert "古い日記" in ctx
+    assert "established" in ctx
+    # 直前章本文は末尾から削られている
+    assert "budget 制限により以下省略" in ctx
+
+
+def test_budget_trims_summaries_before_higher_priority(sample):
+    # budget 500 → 本文→要約→established→制約 の順で落ち、伏線は常に残る
+    code, out = run(sample, "--chapter", "3", "--budget", "500")
+    assert code == 0, out
+    ctx = ctx_of(sample, 3)
+    assert "禁止語彙" not in ctx   # 制約（priority 枠で最後に落とれる枠）は落ちる
+    assert "古い日記" in ctx and "203号室" in ctx  # 伏線は絶対残る
+    assert "年齢: 19" in ctx       # 対象章メタ・キャラは必ず残る
+
+
+def test_freshness_check_stale(sample):
+    # pack 実行 → 原典を touch → --check が警告する
+    code, out = run(sample, "--chapter", "3")
+    assert code == 0, out
+    novel2 = sample / "novel" / "ch02.md"
+    old = novel2.read_text(encoding="utf-8")
+    novel2.write_text(old + "\n（推敲で1行追加）\n", encoding="utf-8")
+    proc = subprocess.run([PY, str(SCRIPT), "--project-dir", str(sample), "--chapter", "3", "--check"],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 1
+    assert "再生成" in proc.stdout
