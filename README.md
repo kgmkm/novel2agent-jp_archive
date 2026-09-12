@@ -8,7 +8,7 @@ AI コーディングエージェント（Hermes / Claude Code / opencode / goos
 TOML ---- validate.py ---- pack.py ---- .context/chNN.md
 ```
 
-詳細方針は `docs/アップデート計画_v2.md`、TOML スキーマは `schema/toml-schema.md`。
+詳細方針は `docs/novel2hermes-jp_アップデート計画_v2.md`、TOML スキーマは `schema/toml-schema.md`。
 
 ## インストール
 
