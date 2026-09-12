@@ -25,6 +25,8 @@ python scripts/pack.py --project-dir <project> --chapter N
 3. **五感ローテーション： シーンごとに視覚以外の感覚（聴覚・触覚・嗅覚・味覚）を 2 つ以上**（references/sensory-rotation.md）
 4. **比喩： シーンごとに 1〜2 個。クリシェ回避**（references/metaphor-guide.md）
 5. 本文は `novel/chNN.md` に保存。plot TOML や .context に本文を書き戻さない
+   - **保存直後に必ず確認する**: ファイルが存在し、見出し以外の本文が入っているか（`python scripts/check_prose.py --project-dir <project>`）。LLM の編集経路は本文を空にしたまま見出しと空行だけを保存する事故が実例としてある — 保存後の本文消失に気づかないまま次章へ進まないこと
+   - **Markdown 段落は空白なし**: 日本語原稿でも段落頭に全角空白（`\u3000`）を入れない。エージェントの編集経路によって壊れる可能性があるため作品規則とする（check_prose.py が警告する）
 6. **執筆中の時代考証**：一文ごとに「時代 / 文化圏 / キャラ知識」の 3 点を意識する。`[[constraints]]` の禁止語彙は最初から使わない（事後修正より執筆時抑制）
 7. ユーザが続きを書いたらその直後から再開。意見を求められたら作品クオリティ最大化の方向で提案
 
@@ -63,9 +65,20 @@ resolve_chapter = 5
 追記後は必ず再検証＋パック再生成：
 
 ```bash
+python scripts/check_prose.py --project-dir <project>   # 本文品質（空本文・禁止語彙・全角空白）
 python scripts/validate.py --project-dir <project>
 python scripts/pack.py --project-dir <project> --chapter <次の章> 
 ```
+
+### proposed の確定確認（執筆直後に必ず行う）
+
+要約・established を `proposed` で記入した後、エージェントはユーザに短く確認する:
+
+> 第 N 章の要約と確定事項を記入しました。以下の内容を確定（confirmed）してよいか確認ください:
+> - summary: （要約の全文）
+> - established: （項目一覧）
+
+**ユーザが明示的に承認した場合だけ**、該当章の `summary_status` と `established[].status` を `confirmed` へ更新する。承認なしに自分で confirmed に変えない。confirm 後は `validate.py` を再実行し、該当章の警告が消えたことを確認する。
 
 ## 推敲への引き継ぎ
 

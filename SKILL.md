@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.2.0
+version: 0.3.0
 ---
 
 # novel2agent-jp
@@ -47,7 +47,12 @@ scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生�
 
 ## 状態
 
-v0.2.0：schema 確定 / scripts（validate.py・pack.py・pixiv_export.py・vfm_to_pixiv.py＋テスト 20 件）完成 / references 整備済み。
+v0.3.0：v0.2.0 に加え、`check_prose.py`（本文品質検査）・`init.py`（プロジェクト雛形生成）を追加。`pack.py --check` は章単位鮮度チェックに対応。`validate.py` は本文パス存在チェック・proposal 照合・proposed 警告の文言改善を実施。
+
+## 本文保存の鉄則（事故対策）
+
+- **Markdown 段落は空白なし**: 段落頭に全角空白を入れない（編集経路で本文が壊れる実例あり）
+- **保存直後に `check_prose.py` を回す**: 本文が空になっていないかを機械で確認してから次へ進む
 
 ## Scripts
 
@@ -69,6 +74,25 @@ python scripts/pack.py --project-dir <project> --chapter N --budget 80000
 ```
 
 出力仕様は `schema/toml-schema.md` §6。未回収伏線は budget でも削らない。
+
+### `scripts/check_prose.py` — 本文品質チェック
+
+```bash
+python scripts/check_prose.py --project-dir <project>            # 全章検査
+python scripts/check_prose.py --project-dir <project> --chapter N
+python scripts/check_prose.py --project-dir <project> --min-chars 200
+python scripts/check_prose.py --project-dir <project> --strict   # 警告でも exit 1
+```
+
+検査: 本文存在（空本文・最低文字数）／段落頭全角空白／禁止語彙（worldbuilding constraints）／一人称の揺れ／章見出し。**本文保存直後に必ず実行する**。
+
+### `scripts/init.py` — プロジェクト雛形生成
+
+```bash
+python scripts/init.py --project-dir <path>
+```
+
+ディレクトリ一式 + proposal.md / meta.toml / AGENTS.md / .gitignore の雛形を作る。既存 meta.toml は上書きしない。
 
 ### `scripts/pixiv_export.py` — pixiv 投稿用変換
 

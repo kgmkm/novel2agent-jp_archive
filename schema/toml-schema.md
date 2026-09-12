@@ -165,7 +165,7 @@ status = "draft"                    # draft / written / revised / confirmed
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
 
-> **実装状況（v0.2.0）**：1〜9 は `scripts/validate.py` に実装済み。**10〜12 の本文検査（禁止語彙・ふりがな・一人称）は未実装**。将来 `scripts/check_prose.py` として実装予定（旧 jp-novel-qa の機能を統合する際に追加）。それまでの本文品質は執筆時の抑制（writing-workflow の時代考証チェック）と推敲フェーズ（revision-workflow Phase B）でカバーする。
+> **実装状況（v0.3.0）**：1〜9 に加え、`meta.toml chapters[].novel` パス存在チェックと proposal↔character 照合（人物名・ふりがな・警告系）を `scripts/validate.py` に実装済み。10〜12 の本文検査は `scripts/check_prose.py`（新設）が担当する。planning 中（`work.status = "planning"`）の `[[chapters]]` 未記入は警告（許容）。
 
 ---
 
@@ -204,7 +204,7 @@ status = "draft"                    # draft / written / revised / confirmed
 established は「章ごとに集約した 1 block」とする（直近2章分の全件行＋ロールアップ行を 1 block に束ねない。古い章から章単位で落とせる粒度を保つ）。
 
 ### 6.4 鮮度チェック（pack 忘れガード）
-`pack.py --check`（または validate.py に同梱）：`character/`・`worldbuilding/`・`plot/`・`novel/` の mtime が対象 `.context/chNN.md` より新しい場合に警告を出す。執筆ワークフロー冒頭の固定1手：`validate.py → pack.py --check → 必要なら pack.py → .context/chNN.md を読む`。
+`pack.py --check`：`character/`・`worldbuilding/`・`plot/`・`novel/` の mtime が対象 `.context/chNN.md` より新しい場合に警告を出す。**`--chapter N` 付きの場合は第 N 章のパックを構成する原典だけを比較する**（対象章とそれ以前の章の plot/novel。後続章の本文更新で前章パックが誤判定されない）。章指定なしの場合は全パック一括。執筆ワークフロー冒頭の固定1手：`validate.py → pack.py --check → 必要なら pack.py → .context/chNN.md を読む`。
 
 ### 6.5 テスト要件（P1 受け入れ条件）
 pack.py は新構成における唯一の情報源（単一点）のため、以下は実装と同時にテストで担保する。

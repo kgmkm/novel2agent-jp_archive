@@ -4,11 +4,20 @@
 
 ## 0. プロジェクト初期化
 
+雛形は `scripts/init.py` で生成する（手作業でのディレクトリ作成は省略ミスの元）:
+
+```bash
+python scripts/init.py --project-dir <path>
+```
+
+既存 `meta.toml` がある場合は上書きしない（エラーで停止）。生成物:
+
 ```
 project/
-├── proposal.md        # 企画書（Markdown のまま）
-├── meta.toml          # 章の唯一の目次
-├── AGENTS.md          # 文体規則・禁止事項（作品の憲法）
+├── proposal.md        # 企画書（Markdown のまま・雛形）
+├── meta.toml          # 章の唯一の目次・雛形
+├── AGENTS.md          # 文体規則・禁止事項（作品の憲法）・雛形
+├── .gitignore         # .context/ を除外
 ├── character/         # chara-NNN.toml
 ├── worldbuilding/     # world-NNN.toml
 ├── plot/              # plot-chNN.toml
@@ -33,6 +42,18 @@ python scripts/validate.py --project-dir <project>
 項目：タイトル（仮）／ターゲット層／ジャンル／想定プラットフォーム／長さ／あらすじ 300〜500 字／テーマ・モチーフ／登場人物一覧／章構成のアウトライン／**感情曲線**（章ごとのピーク強度・支配的感情・曲線形状）。
 
 作成後にユーザへ全文提示し、承認を得てから次へ。数値は目安であり、シーン要求に応じて調整可。
+
+### proposal の承認状態（必須）
+
+`proposal.md` 冒頭に状態行を置く（YAML front matter 相当）:
+
+```
+proposal_status: proposed
+```
+
+- **`proposed` の間は TOML 進行（worldbuilding 以降）に入らない**
+- 全文提示 → ユーザが明示的に承認 → `proposal_status: confirmed` に更新
+- **企画書を後から変更した場合は同期チェック**: ジャンル・登場人物・舞台・関係性など変更前の要素を proposal.md 全文から検索し、古い表現を削除/書き換える（例: 当初「淡い恋愛」だったものを友情ものに変更したら、その表現が残っていないか確認する。未使用の舞台描写も同様）
 
 感情曲線の記入例：
 

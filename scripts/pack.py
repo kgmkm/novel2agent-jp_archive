@@ -353,24 +353,65 @@ def build_markdown(blocks: list[Block], budget: int) -> tuple[str, list[str]]:
     return "\n\n---\n\n".join(b.text for b in kept) + "\n", notes
 
 
-def freshness_check(project: Path, project_file: Path) -> int:
-    """pack.py --check: .context/chNN.md より新しい原典があれば警告"""
+def freshness_check(project: Path, project_file: Path, chapter: int | None = None) -> int:
+    """pack.py --check: .context/chNN.md より新しい原典があれば警告。
+
+    --chapter N を指定した場合は第 N 章のパックを構成する原典だけを比較する
+    （対象章の plot + 全 character/worldbuilding + meta + chapter < N の plot/novel）。
+    後続章の本文更新で前章パックが誤判定されないようにするため。
+    """
     ctx_dir = project / ".context"
     if not ctx_dir.is_dir():
         print("[WARN] .context/ が無い → pack.py を実行して生成してください")
         return 1
-    newest_source = 0.0
-    for sub in SOURCE_DIRS + ("novel",):
-        d = project / sub
-        if d.is_dir():
-            for f in d.rglob("*"):
-                if f.is_file():
-                    newest_source = max(newest_source, f.stat().st_mtime)
+
+    if chapter is None:
+        source_files = [f for sub in SOURCE_DIRS + ("novel",)
+                        for f in (project / sub).rglob("*")
+                        if (project / sub).is_dir() and f.is_file()]
+    else:
+        files, errors = load_all(project)
+        if errors:
+            for e in errors:
+                print(e)
+            return 1
+        chapter_of = {}
+        for _, d in by_prefix(files, "plot"):
+            if isinstance(d.get("chapter"), int):
+                chapter_of[d["chapter"]] = d
+        source_files = []
+        for sub in ("character", "worldbuilding", "meta"):
+            d = project / sub
+            if sub == "meta":
+                mf = project / "meta.toml"
+                if mf.is_file():
+                    source_files.append(mf)
+            elif d.is_dir():
+                source_files.extend(f for f in sorted(d.glob("*.toml")) if f.is_file())
+        for num, data in chapter_of.items():
+            if num <= chapter and len(data.get("id", "")) > 0:
+                pf = project / "plot" / f"plot-ch{num:02d}.toml"
+                if pf.is_file():
+                    source_files.append(pf)
+                novel_rel = None
+                for c in files.get(project / "meta.toml", {}).get("chapters", []):
+                    if isinstance(c, dict) and c.get("number") == num:
+                        novel_rel = c.get("novel")
+                        break
+                if novel_rel:
+                    nf = project / novel_rel
+                    if nf.is_file():
+                        source_files.append(nf)
+        source_files = sorted(set(source_files))
+
+    newest_source = max((f.stat().st_mtime for f in source_files), default=0.0)
     if newest_source == 0.0:
         print("[OK] 原典ファイルなし（新規プロジェクト）")
         return 0
     stale = 0
     for ctx in sorted(ctx_dir.glob("ch*.md")):
+        if chapter is not None and ctx.stem != f"ch{chapter:02d}":
+            continue
         if ctx.stat().st_mtime < newest_source:
             print(f"[WARN] {ctx.name}: 原典より古い → pack.py で再生成してください")
             stale += 1
@@ -395,7 +436,7 @@ def main() -> int:
         return 1
 
     if args.check:
-        return freshness_check(project, None)
+        return freshness_check(project, None, args.chapter)
 
     if args.chapter is None:
         ap.error("--chapter が必要（--check 以外の場合）")

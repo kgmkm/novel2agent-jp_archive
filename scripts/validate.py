@@ -58,6 +58,7 @@ class Report:
     def __init__(self):
         self.errors: list[str] = []
         self.warnings: list[str] = []
+        self.proposed_warnings: list[str] = []  # 未確定設定（proposed）系の警告
 
     def error(self, path, msg):
         self.errors.append(f"{ERR} {path.name}: {msg}")
@@ -254,16 +255,22 @@ def validate_plots(plots, ref_ids: set[str], r: Report) -> None:
             if st is not None and st not in VALID_SUMMARY_STATUS:
                 r.error(path, f"established[{i}]: status 不正 '{st}'")
             elif st == "proposed":
-                r.warn(path, f"established[{i}]: proposed 残留（人間による確定待）")
+                content_head = str(e.get("content", ""))[:30]
+                r.proposed_warnings.append(
+                    f"{WARN} {path.name}: established[{i}]: proposed 残留（{content_head}…） → 確定は人間が status を confirmed に変更"
+                )
             for cid in e.get("characters", []):
                 if type_ok(cid, str) and cid not in ref_ids:
                     r.error(path, f"established[{i}].characters: ID '{cid}' が存在しない")
 
         ss = data.get("summary_status")
+        ch = data.get("chapter")
         if ss is not None and ss not in VALID_SUMMARY_STATUS:
             r.error(path, f"summary_status 不正 '{ss}'")
         elif ss == "proposed":
-            r.warn(path, "summary_status = proposed（章要約が未確定）")
+            r.proposed_warnings.append(
+                f"{WARN} {path.name}: summary_status = proposed（章 {ch if type_ok(ch, int) else '?'} の要約が未確定） → 要約を確認のうえ人間が confirmed に変更"
+            )
 
 
 def validate_meta(project: Path, files: dict[Path, dict], r: Report) -> dict | None:
@@ -281,7 +288,12 @@ def validate_meta(project: Path, files: dict[Path, dict], r: Report) -> dict | N
             r.error(meta_path, f"work.status 不正 '{work.get('status')}'")
     chapters = data.get("chapters")
     if not isinstance(chapters, list) or not chapters:
-        r.error(meta_path, "[[chapters]] 必須・1件以上")
+        # 雛形（init.py 直後・plot 未作成）では chapters 未記入を許す（work.status = planning の場合のみ）
+        work = data.get("work")
+        if isinstance(work, dict) and work.get("status") == "planning":
+            r.warn(meta_path, "[[chapters]] 未記入（planning 中は許容。plot 作成後に追記すること）")
+        else:
+            r.error(meta_path, "[[chapters]] 必須・1件以上")
         return data
     prev: int | None = None
     for i, c in enumerate(chapters):
@@ -301,6 +313,13 @@ def validate_meta(project: Path, files: dict[Path, dict], r: Report) -> dict | N
                 r.error(meta_path, f"chapters[{i}].plot: '{rel}' が存在しない")
             elif target.resolve() not in {f.resolve() for f in files}:
                 r.error(meta_path, f"chapters[{i}].plot: '{rel}' が構文エラーでロード失敗")
+        # 本文パスの存在チェック（schema §4: novel = "novel/chNN.md"、未執筆は省略可）
+        novel_rel = c.get("novel")
+        if novel_rel is not None:
+            if not type_ok(novel_rel, str):
+                r.error(meta_path, f"chapters[{i}].novel: 文字列で指定する（実 {type(novel_rel).__name__}）")
+            elif not (project / novel_rel).is_file():
+                r.error(meta_path, f"chapters[{i}].novel: '{novel_rel}' が存在しない（本文未保存 or パス誤り）")
         st = c.get("status")
         if st is not None and st not in VALID_CHAPTER_STATUS:
             r.error(meta_path, f"chapters[{i}]: status 不正 '{st}'")
@@ -318,6 +337,33 @@ def build_index(chars, worlds, plots) -> list[str]:
     for _, d in plots:
         out.append(f"{d.get('id', '?'):<11} plot   ch{d.get('chapter', '?')}: {d.get('title', '')}")
     return out
+
+
+def check_proposal_sync(project: Path, chars, r: Report) -> None:
+    """proposal.md の人物名・ふりがなと character TOML の照合（T6・警告系）。
+
+    proposal.md の登場人物一覧に TOML の name_ja が見つからない、または
+    proposal 側のふりがな表記が TOML の name_ruby と一致しない場合に警告する。
+    """
+    proposal = project / "proposal.md"
+    if not proposal.is_file():
+        return
+    text = proposal.read_text(encoding="utf-8")
+    for path, d in chars:
+        name = d.get("name_ja")
+        if type_ok(name, str) and name and name not in text:
+            r.proposed_warnings.append(
+                f"{WARN} proposal.md: character {d.get('id', '?')} の『{name}』が proposal.md に見つからない"
+                f"（人物の追加漏れ or proposal の更新忘れ）"
+            )
+        ruby = d.get("name_ruby")
+        if type_ok(ruby, str) and ruby:
+            # ふりがなの区切り（'・' と半角/全角スペース）を揃えて比較
+            norm = lambda s: s.replace("・", " ").replace("\u3000", " ")
+            if norm(name or "") in text and norm(ruby) not in norm(text):
+                r.proposed_warnings.append(
+                    f"{WARN} proposal.md: 『{name}』のふりがな表記が TOML（{ruby}）と一致しない可能性"
+                )
 
 
 # ---------------------------------------------------------------- main
@@ -354,14 +400,23 @@ def main() -> int:
     validate_worlds(worlds, ref_ids, r)
     validate_plots(plots, ref_ids, r)
     validate_meta(project, files, r)
+    check_proposal_sync(project, chars, r)
 
     print()
     print(f"== 検証結果 ({len(files)} TOML ファイル) ==")
     for line in r.errors:
         print(line)
-    for line in r.warnings:
-        print(line)
-    print(f"\nエラー {len(r.errors)} 件 / 警告 {len(r.warnings)} 件")
+    if r.proposed_warnings:
+        print(f"\n-- 未確定設定（proposed）: {len(r.proposed_warnings)} 件 --")
+        for line in r.proposed_warnings:
+            print(line)
+    # 警告合計 = proposed 系 + その他
+    total_warnings = len(r.warnings) + len(r.proposed_warnings)
+    if r.warnings:
+        print("\n-- その他の警告 --")
+        for line in r.warnings:
+            print(line)
+    print(f"\nエラー {len(r.errors)} 件 / 警告 {total_warnings} 件（うち未確定設定 {len(r.proposed_warnings)} 件）")
     return 0 if not r.errors else 1
 
 
