@@ -4,7 +4,8 @@
 
 - **文字コード**：UTF-8
 - **ファイル名 = ID**：`chara-001.toml` の `id` は必ず `"chara-001"`。validator が強制する
-- **ID 命名**：`{prefix}-{3桁連番}`。prefix は `chara` / `plot` / `fs` / `world`。シリーズ内で一意
+- **ID 命名**：`{prefix}-{3桁連番}`。prefix は `chara` / `fs` / `world`。シリーズ内で一意
+- **plot 章ファイルの例外**：plot のみ章番号を ID に含む `plot-ch{2桁}.toml`（例：`plot-ch01.toml`、id も `"plot-ch01"`）。meta.toml から参照しやすくするための例外。validate.py は両形式でなくこの形式のみを検証する
 - **章範囲**：`from_chapter = N`、`to_chapter = M`（整数。終端未定は `to_chapter` を省略）
 - **status**：`"proposed"`（LLM提案・未確定）または `"confirmed"`（人間承認済）。省略時は confirmed 扱い。established / summary のみ使用
 - **コメント**：ID 参照箇所には `# 桜井美咲` のような人間向けコメントを許可（機械は無視）
@@ -56,6 +57,7 @@ note = "覚醒後。制服が黒い戦闘服に"
 
 **規則**：
 - `[[versions]]` に書かれたキーは、その章範囲でルートの値を上書きする
+- `[basic]` 配下のキー（`age` / `gender` / `first_person` / `speech_style` / `height_cm`）を versions で書いた場合、pack.py は `[basic]` の対応するキーに反映して出力する（例：`versions.age = 19` → 出力上は `basic.age = 19` として解決）
 - versions 同士の章範囲が重複したら validate エラー
 - `age` などキャラ固有の追加キーは自由（スキーマは必須キーのみ検証）
 
@@ -187,12 +189,17 @@ status = "draft"                    # draft / written / revised / confirmed
 ### 6.3 budget 超過時の削り順
 `--budget`（既定 100K トークン相当）超過時は、以下の順で削る。上位ほど優先的に残す。
 
-1. 対象章メタデータ・登場キャラ（versions 解決済）
+1. 対象章メタデータ・登場キャラ（versions 解決済）— **削らない**
 2. worldbuilding 制約
-3. 未回収伏線
-4. established（proposed 全件 → 6.2 ロールアップ後）
-5. それ以前の章 summary（古い章から順に落とす）
-6. 直前章本文（末尾から削る）
+3. 未回収伏線 — **削らない**（§6.5 抽出漏れ禁止のため、budget 制御の対象外）
+4. established（proposed 全件 → 6.2 ロールアップ後。章単位の block で落とす）
+5. それ以前の章 summary（古い章から順に落とす。章ごと 1 block）
+6. 直前章本文（末尾から削る。削りきれない場合は block 丸ごと削除）
+
+> 補足：実装上は「priority 1（対象章＋キャラ）と伏線を固定し、本文 → summary → established → 制約の順で落とす」。budget に全く収まらない場合は priority 1 のみ残す。[OK/NOTE ログ](../scripts/pack.py)に削った内容を明示出力する。
+
+### 6.5b established の budget 粒度
+established は「章ごとに集約した 1 block」とする（直近2章分の全件行＋ロールアップ行を 1 block に束ねない。古い章から章単位で落とせる粒度を保つ）。
 
 ### 6.4 鮮度チェック（pack 忘れガード）
 `pack.py --check`（または validate.py に同梱）：`character/`・`worldbuilding/`・`plot/`・`novel/` の mtime が対象 `.context/chNN.md` より新しい場合に警告を出す。執筆ワークフロー冒頭の固定1手：`validate.py → pack.py --check → 必要なら pack.py → .context/chNN.md を読む`。
