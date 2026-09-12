@@ -47,5 +47,44 @@ scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生�
 
 ## 状態
 
-v0.2.0：schema 確定 / scripts（validate.py・pack.py＋17 テスト）完成 / references 5 本整備済み。
-残課題：pixiv_export 等の既存スクリプトの TOML 構造対応（P3）。
+v0.2.0：schema 確定 / scripts（validate.py・pack.py・pixiv_export.py・vfm_to_pixiv.py＋テスト 20 件）完成 / references 整備済み。
+
+## Scripts
+
+### `scripts/validate.py` — 設定検証
+
+```bash
+python scripts/validate.py --project-dir <project>           # 構造検証（エラー 1 件で exit 1）
+python scripts/validate.py --project-dir <project> --index   # ID→名称一覧のみ
+```
+
+検証項目は `schema/toml-schema.md` §5。proposed 残留は警告（exit 0）。
+
+### `scripts/pack.py` — コンテキストパック生成
+
+```bash
+python scripts/pack.py --project-dir <project> --chapter N            # .context/chNN.md 生成
+python scripts/pack.py --project-dir <project> --chapter N --check    # 生成物の鮮度チェックのみ
+python scripts/pack.py --project-dir <project> --chapter N --budget 80000
+```
+
+出力仕様は `schema/toml-schema.md` §6。未回収伏線は budget でも削らない。
+
+### `scripts/pixiv_export.py` — pixiv 投稿用変換
+
+`novel/chNN.md`（旧 `NNN-タイトル.md` も受理）を pixiv 小説投稿用単一ファイルへ統合。
+
+```bash
+python scripts/pixiv_export.py --project-dir <project>            # export/pixiv.md に統合
+python scripts/pixiv_export.py --project-dir <project> --split    # 50,000字超過時に章分割
+python scripts/pixiv_export.py --project-dir <project> --verify   # 本文が改変されていないか差分検証
+python scripts/pixiv_export.py --project-dir <project> --check-length
+```
+
+### `scripts/vfm_to_pixiv.py` — VFM→pixiv タグ変換
+
+```bash
+python scripts/vfm_to_pixiv.py novel/ch01.md -o pixiv/ch01.txt
+```
+
+記法対比表は `references/vfm-to-pixiv-workflow.md`。
