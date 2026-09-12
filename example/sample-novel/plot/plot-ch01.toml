@@ -1,0 +1,21 @@
+id = "plot-ch01"
+chapter = 1
+title = "覚醒"
+peak_intensity = 60
+pov = "chara-001"
+summary = ""
+summary_status = "proposed"
+
+[[scenes]]
+title = "放課後の教室"
+location = "高校・3年B組"
+time = "夕方"
+pov = "chara-001"
+characters = ["chara-001"]
+content = '''机の上に古い手紙を見つける。'''
+emotion_peak = "静かな導入"
+
+[[foreshadowing]]
+id = "fs-001"
+content = "古い手紙"
+resolve_chapter = 3

@@ -1,0 +1,14 @@
+id = "chara-001"
+name_ja = "桜井美咲"
+name_ruby = "さくらい みさき"
+role = "protagonist"
+
+[basic]
+gender = "female"
+age = 17
+first_person = "私"
+speech_style = "丁寧語"
+
+[appearance]
+hair = "黒髪ロング"
+eyes = "ダークブラウン"

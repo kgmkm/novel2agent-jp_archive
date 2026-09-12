@@ -1,0 +1,10 @@
+[work]
+title = "魔法少女はじめました"
+genre = "現代ファンタジー"
+status = "writing"
+
+[[chapters]]
+number = 1
+plot = "plot/plot-ch01.toml"
+novel = "novel/ch01.md"
+status = "draft"
