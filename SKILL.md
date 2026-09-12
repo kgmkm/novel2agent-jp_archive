@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.1.0
+version: 0.2.0
 ---
 
 # novel2agent-jp
@@ -37,9 +37,15 @@ scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生�
 | ファイル | 読むとき |
 |---|---|
 | `schema/toml-schema.md` | TOML の必須キー・検証項目・pack.py 出力仕様 |
-| `references/writing-workflow.md` | 執筆セッションの手順（P2 で整備予定） |
-| `references/hermes-setup.md` | Hermes 固有の環境セットアップが必要なとき |
+| `references/planning-workflow.md` | 企画フェーズ（proposal / worldbuilding / character / plot の TOML 作成手順） |
+| `references/writing-workflow.md` | 執筆セッションの手順（pack 生成 → 執筆 → TOML 反映） |
+| `references/revision-workflow.md` | 推敲フェーズ（Phase A/B/C + MoA 4 視点 + proposed 確定手順） |
+| `references/character-template.md` | キャラ TOML の全項目テンプレートと記入例 |
+| `references/sensory-rotation.md` | 五感ローテーション（シーンごと視覚以外 2 つ以上） |
+| `references/metaphor-guide.md` | 比喩の選び方（クリシェ回避・1〜2 個/シーン） |
+| `references/hermes-setup.md` | Hermes 固有の環境セットアップ（他エージェントでは不要） |
 
 ## 状態
 
-v0.1.0：骨段階。schema は確定済み。scripts（validate.py / pack.py）と references は未整備。
+v0.2.0：schema 確定 / scripts（validate.py・pack.py＋17 テスト）完成 / references 5 本整備済み。
+残課題：pixiv_export 等の既存スクリプトの TOML 構造対応（P3）。
