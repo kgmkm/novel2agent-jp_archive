@@ -1,4 +1,4 @@
-# novel2hermes-jp TOML スキーマ定義書
+# novel2agent-jp TOML スキーマ定義書
 
 ## 0. 共通規則
 
@@ -164,6 +164,8 @@ status = "draft"                    # draft / written / revised / confirmed
 | 12 | 一人称の揺れ（本文 vs character.first_person） | 警告 |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
+
+> **実装状況（v0.2.0）**：1〜9 は `scripts/validate.py` に実装済み。**10〜12 の本文検査（禁止語彙・ふりがな・一人称）は未実装**。将来 `scripts/check_prose.py` として実装予定（旧 jp-novel-qa の機能を統合する際に追加）。それまでの本文品質は執筆時の抑制（writing-workflow の時代考証チェック）と推敲フェーズ（revision-workflow Phase B）でカバーする。
 
 ---
 

@@ -124,7 +124,7 @@ location = "臼井駅"
 time = "夕方・秋"
 pov = "chara-001"
 characters = ["chara-001", "chara-002"]
-content = '''荷物の中から古い日記が出てくる。美咲は页を開けず箱に戻す。'''  # 演出指示
+content = '''荷物の中から古い日記が出てくる。美咲はページを開けず箱に戻す。'''  # 演出指示
 emotion_peak = "静かな導入"
 
 [[foreshadowing]]
