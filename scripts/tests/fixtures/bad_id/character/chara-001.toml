@@ -1,7 +1,7 @@
 id = "chara-009"
 name_ja = "ここはファイル名と不一致にする"
 name_ruby = "ここはファイル名と不一致にする"
-role = "mob"
+role = "support"
 
 [basic]
 gender = "male"

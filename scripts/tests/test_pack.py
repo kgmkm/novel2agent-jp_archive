@@ -143,3 +143,89 @@ def test_freshness_check_stale(sample):
                           capture_output=True, text=True, encoding="utf-8")
     assert proc.returncode == 1
     assert "再生成" in proc.stdout
+
+
+LOG_TOML = """[[log]]
+id = "log-001"
+date = "2026-09-10"
+kind = "reject"
+what = "第3章で美咲を覚醒させない案"
+why = "弱すぎる"
+affects = ["plot-ch03"]
+by = "human"
+
+[[log]]
+id = "log-002"
+date = "2026-09-11"
+kind = "note"
+what = "会話のトーンを硬めに統一する"
+why = "地の文との温度差を消す"
+affects = []
+by = "agent"
+"""
+
+
+def test_production_log_included_in_pack(sample):
+    dst = WORK / "pack_log"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    (dst / "production-log.toml").write_text(LOG_TOML, encoding="utf-8")
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    assert "制作ログ" in ctx
+    assert "- [2026-09-10][reject] 第3章で美咲を覚醒させない案 — 弱すぎる" in ctx
+    assert "会話のトーンを硬めに統一する" in ctx  # 直近10件枠
+
+
+def test_production_log_excluded_when_unrelated_and_old(sample):
+    # 11件以上前の非関連エントリは載らない（直近10件 + 対象章関連のみ）
+    dst = WORK / "pack_log_old"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    entries = ['[[log]]\nid = "log-%03d"\ndate = "2026-08-%02d"\nkind = "note"\n'
+               'what = "古いメモ%02d"\nwhy = "w"\naffects = []\nby = "agent"\n'
+               % (i, (i % 28) + 1, i) for i in range(1, 13)]
+    entries.append('[[log]]\nid = "log-013"\ndate = "2026-09-12"\nkind = "change"\n'
+                   'what = "第3章の視点を太郎に変更"\nwhy = "緊張を作る"\naffects = ["plot-ch03"]\nby = "human"\n')
+    (dst / "production-log.toml").write_text("\n".join(entries), encoding="utf-8")
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    assert "古いメモ01" not in ctx            # 直近10件の外・非関連 → 載らない
+    assert "古いメモ04" in ctx                # 直近10件の境界内 → 載る
+    assert "第3章の視点を太郎に変更" in ctx   # 対象章関連は全件載る
+
+
+def test_versions_appearance_key_reflected(sample):
+    # versions の [appearance] 系キー（outfit 等）は該当章のパックに反映される
+    dst = WORK / "pack_ver_app"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    c = dst / "character" / "chara-002.toml"
+    c.write_text(c.read_text(encoding="utf-8") + '\n[[versions]]\nfrom_chapter = 1\noutfit = "黒い外套"\n',
+                 encoding="utf-8")
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    assert "黒い外套" in ctx
+
+
+def test_motivation_and_second_person_rendered(sample):
+    # second_person / fears / catchphrase / habits がパックに出力される
+    dst = WORK / "pack_disp"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    c = dst / "character" / "chara-001.toml"
+    t = c.read_text(encoding="utf-8")
+    t = t.replace('speech_style = "丁寧語"', 'speech_style = "丁寧語"\nsecond_person = "あなた"')
+    t += ('\n[motivation]\nfears = "置いていかれること"\n'
+          'catchphrase = "……そうですか"\nhabits = "袖口を直す"\n')
+    c.write_text(t, encoding="utf-8")
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    assert "二人称: あなた" in ctx
+    assert "- 恐れ: 置いていかれること" in ctx
+    assert "- 決め台詞: ……そうですか" in ctx
+    assert "- 癖: 袖口を直す" in ctx

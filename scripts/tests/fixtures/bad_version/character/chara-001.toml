@@ -1,7 +1,7 @@
 id = "chara-001"
 name_ja = "花村あおい"
 name_ruby = "はなむら あおい"
-role = "heroine"
+role = "protagonist"
 
 [basic]
 gender = "female"

@@ -3,3 +3,4 @@
 __pycache__/
 scripts/tests/.work/
 docs/
+.temp/

@@ -7,24 +7,28 @@
 - 各キャラ 1 ファイル（`character/chara-NNN.toml`、id = ファイル名）
 - **章またぎ変化は `[[versions]]` に「変更されるキーのみ」書く**（旧版の「1バージョン1ファイル」方式は廃止）
 - 必須キーのみ validate が検証。追加キーは自由（toml-schema §1）
+- pack に出力されるのは執筆に効くキーだけ（`height_cm` / `birthday` などは出力外）
 - 決められない項目は省略ではなく、comment で事由を残す（`# 伏線のため不明` 等）
 
 ## テンプレート
 
 ```toml
 id = "chara-001"                    # 必須・ファイル名と一致
-name_ja = "桜井美咲"                # 必須
+name_ja = "桜井美咲"                # 必須。固まる前は候補を先に出す（発想ガイド参照）
 name_ruby = "さくらい みさき"        # 必須（初出ふりがな検証用）
-role = "protagonist"                # 必須。protagonist/heroine/rival/mentor/mob 等
+role = "protagonist"                # 必須。protagonist / antagonist / support のいずれか
+flaw = "頼ることが苦手で一人で抱え込む"  # 推奨・作中で一度は判断を誤らせる欠点
+quirk = "学者なのに部屋に漫画が二冊だけある"  # 推奨・属性から連想されないズレ一つ
+heat = "母の死に意味を見出したい"    # 推奨・この人物が必死になる対象
 
 [basic]                             # 必須セクション
 gender = "female"                   # 必須
 age = 19                            # 必須。versions で章ごとに変えられる
 first_person = "私"                 # 必須（一人称検証用）
 speech_style = "丁寧語"              # 推奨。口調のルール
-height_cm = 158                     # 任意
+height_cm = 158                     # 任意（pack 対象外。画像・成長管理用）
 second_person = "あなた"             # 任意。誰にどの二人称かはコメントで
-birthday = "3月15日"                # 任意。伏線・イベント管理用
+birthday = "3月15日"                # 任意（pack 対象外。イベント管理用）
 species = "人間"                    # 任意。ファンタジーでは必須
 
 [appearance]                        # 画像生成と執筆の両方の安定性を左右する
@@ -42,25 +46,29 @@ front = "真面目で礼儀正しい"          # 表の性格
 back = "実は承認欲求が強い"           # 裏の内面。自覚していない場合も
 strengths = "思いやりがある"
 weaknesses = "やや内向的。頼ることが苦手"
-voice_image = "澄んだ中高音"
 
 [motivation]                        # 行動原理（任意だが物語の核になるので埋めること）
 core_wound = '''幼少期に母親を病気で亡くした。'''
+false_belief = "努力すれば必ず報われる"   # 本人は正しいと信じているが物語中で崩される考え（一行）
 principle = "他人を守りたい"          # 意思決定の最優先基準
 goal_external = "魔法公安の捜査官になる"
 desire_hidden = "母の死に意味を見出したい"   # 自覚していない欲求
-arc = "平凡な大学生→覚醒→公安エース→術式継承" # 開始→中間→終了
 fears = "再び大切な人を失うこと"      # 突かれると判断を誤る
 habits = "困ると髪をいじる"
 catchphrase = "……そうですか"
 likes = ["苺ミルク", "雨天の図書室"]
 dislikes = ["電話"]
 
+[design]                            # 任意。作劇上の設計（発想の手順は character-design-guide.md）
+screen_time = "lead"                # lead(主軸) / support(脇) / minor(端役)。他の値は validate エラー
+
 [[relations]]                       # 0 件以上。target は存在チェック対象
 target = "chara-002"                # 必須 # 佐藤太郎
-kind = "学友"                       # 兄弟/師弟/恋愛/敵対 等
+kind = "学友"                       # 関係の名前（兄弟/師弟/恋愛/敵対 等）
+function = "contrast"               # 任意。作劇上の役割（contrast=対照 / outsider=部外者 等）。kind と混ぜない
 call = "太郎"                       # どう呼ぶか（任意）
 emotion = "信頼"                    # 好意/尊敬/恐怖/嫉妬 等
+no_compromise = "謝罪がない限り和解しない"  # 任意。この関係で妥協できない理由（敵対関係では必ず書く）
 
 [[versions]]                        # 章またぎ変化（属性変更の唯一の記録場所）
 from_chapter = 3                    # 必須
@@ -106,7 +114,7 @@ note = "堕落後。口調は丁寧だが粘着質に"
 id = "chara-004"
 name_ja = "セシリア"
 name_ruby = "せしりあ"
-role = "heroine"
+role = "protagonist"
 
 [basic]
 gender = "female"

@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.3.0
+version: 0.3.1
 ---
 
 # novel2agent-jp
@@ -40,14 +40,12 @@ scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生�
 | `references/planning-workflow.md` | 企画フェーズ（proposal / worldbuilding / character / plot の TOML 作成手順） |
 | `references/writing-workflow.md` | 執筆セッションの手順（pack 生成 → 執筆 → TOML 反映） |
 | `references/revision-workflow.md` | 推敲フェーズ（Phase A/B/C + MoA 4 視点 + proposed 確定手順） |
+| `references/moa-manual-orchestration.md` | 4 視点の横並び比較推敲（MoA）の実行手順。エージェント非依存（推敲で複数モデルを使うとき） |
 | `references/character-template.md` | キャラ TOML の全項目テンプレートと記入例 |
+| `references/character-design-guide.md` | キャラの発想手順（欠点先行・三層・配置。テンプレを埋める前に） |
 | `references/sensory-rotation.md` | 五感ローテーション（シーンごと視覚以外 2 つ以上） |
 | `references/metaphor-guide.md` | 比喩の選び方（クリシェ回避・1〜2 個/シーン） |
 | `references/hermes-setup.md` | Hermes 固有の環境セットアップ（他エージェントでは不要） |
-
-## 状態
-
-v0.3.0：v0.2.0 に加え、`check_prose.py`（本文品質検査）・`init.py`（プロジェクト雛形生成）を追加。`pack.py --check` は章単位鮮度チェックに対応。`validate.py` は本文パス存在チェック・proposal 照合・proposed 警告の文言改善を実施。
 
 ## 本文保存の鉄則（事故対策）
 
@@ -61,6 +59,7 @@ v0.3.0：v0.2.0 に加え、`check_prose.py`（本文品質検査）・`init.py`
 ```bash
 python scripts/validate.py --project-dir <project>           # 構造検証（エラー 1 件で exit 1）
 python scripts/validate.py --project-dir <project> --index   # ID→名称一覧のみ
+python scripts/validate.py --project-dir <project> --log     # 制作ログの表出力（--affects で絞り込み）
 ```
 
 検証項目は `schema/toml-schema.md` §5。proposed 残留は警告（exit 0）。
@@ -92,7 +91,7 @@ python scripts/check_prose.py --project-dir <project> --strict   # 警告でも 
 python scripts/init.py --project-dir <path>
 ```
 
-ディレクトリ一式 + proposal.md / meta.toml / AGENTS.md / .gitignore の雛形を作る。既存 meta.toml は上書きしない。
+ディレクトリ一式 + proposal.md / meta.toml / AGENTS.md / .gitignore / production-log.toml の雛形を作る。既存 meta.toml は上書きしない。
 
 ### `scripts/pixiv_export.py` — pixiv 投稿用変換
 

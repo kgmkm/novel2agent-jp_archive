@@ -18,6 +18,7 @@ project/
 ├── meta.toml          # 章の唯一の目次・雛形
 ├── AGENTS.md          # 文体規則・禁止事項（作品の憲法）・雛形
 ├── .gitignore         # .context/ を除外
+├── production-log.toml # 制作ログ（追記専用。なぜ変えたか・却下した案）
 ├── character/         # chara-NNN.toml
 ├── worldbuilding/     # world-NNN.toml
 ├── plot/              # plot-chNN.toml
@@ -63,6 +64,15 @@ proposal_status: proposed
 | 第2章 | 80% | 葛藤・悲しみ | 再会の衝撃(70%)→頂点(80%)→沈黙の下降 |
 | 第3章 | 100% | 解放・希望 | 急上昇→カタルシス→静かな終幕 |
 
+### 企画が定まらないときの提案材料
+
+作りたい作品がない、または曖昧なときにだけ、次のどれかを一つ提案する。決まっているときは使わない。
+
+- 二つの遠い素材の足し算。「もし〜だったら、しかも〜」の形で、離れた二つを組み合わせたものを企画の核にする。「さらに」で足すと説明的になるので「しかも」で足す
+- テーマを後から見つける。テーマ欄を「（仮）執筆後に確定」と注記して進め、七〜八割書いた時点で「この作品の人物たちは皆〜している」という一文が浮かんだらそれをテーマとし、寄与しない場面を削る。`proposal_status` は通常どおり confirmed にしてよい（テーマの確定と企画の確定は別）
+- 制約から始める。想定プラットフォーム、文字数、章数、締切、扱える題材の範囲を先に固定し、制約を起点に発想する。自由に書いてよい、が最も書きにくい
+- 梗概を人に試す。ユーザに「一、二文で人に話せますか」と聞く。話した反応が薄ければ捨てる提案をする。「つまらない」と言われたら「どこが」を聞くよう促す（エージェントはユーザの代わりに反応を作らない）
+
 ## 2. 世界観（worldbuilding/world-NNN.toml）
 
 世界設定が土台。キャラの所属・能力・服装はここから導かれるため必ず先に作る。
@@ -91,7 +101,15 @@ note = "山育ちのため知らない"
 
 ## 3. キャラ（character/chara-NNN.toml）
 
-テンプレートは `references/character-template.md`。必須キーのみスキーマが検証し、追加キーは自由。
+テンプレートは `references/character-template.md`、発想の手順は `references/character-design-guide.md`。必須キーのみスキーマが検証し、追加キーは自由。
+
+### 3-0. 名前を先に決める
+
+キャラを書き始める前に、全キャラの `name_ja` / `name_ruby` の候補を先に出す。
+
+- 候補を 2〜3 ずつ出してユーザに選ばせる。名前が決まると `first_person` / `speech_style`（口調）が安定し、後の修正が減る
+- 未決の間は `name_ja = "TBD 桜井"` のように書き、**TBD が残ったままプロット（§4）へ進まない**。validate が警告する
+- 強い却下理由があった名前は `production-log.toml` に `kind = "reject"` で残す（同じ案を再提案しないため）
 
 ```toml
 id = "chara-001"
@@ -188,5 +206,6 @@ status = "draft"                    # draft / written / revised / confirmed
 1. `python scripts/validate.py --project-dir <project>` → エラー 0
 2. `python scripts/validate.py --project-dir <project> --index` → ID↔名称の一覧が意図通り
 3. ユーザに全ファイル一覧と `--index` 出力を提示し、修正指示を待つ
+4. 企画段階で proposal.md の内容を変えた、または案を却下した場合、`production-log.toml` に記録したか
 
 vecmemori / ビルトインメモリへの保存は行わない（廃止）。すべて TOML に残る。

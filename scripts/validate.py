@@ -6,12 +6,15 @@
 
 Usage:
   python validate.py --project-dir <path>
-  python validate.py --project-dir <path> --index    # ID 一覧のみ出力
+  python validate.py --project-dir <path> --index          # ID 一覧のみ出力
+  python validate.py --project-dir <path> --log            # 制作ログの表出力
+  python validate.py --project-dir <path> --log --affects plot-ch03
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -21,6 +24,12 @@ VALID_WORK_STATUS = {"planning", "writing", "revision", "complete"}
 VALID_CHAPTER_STATUS = {"draft", "written", "revised", "confirmed"}
 VALID_SUMMARY_STATUS = {"proposed", "confirmed"}
 VALID_CONSTRAINT_KINDS = {"forbidden_words", "unknown_to", "era"}
+VALID_ROLES = {"protagonist", "antagonist", "support"}
+VALID_SCREEN_TIME = {"lead", "support", "minor"}
+VALID_LOG_KINDS = {"change", "reject", "note"}
+VALID_LOG_BY = {"agent", "human"}
+LOG_ID_RE = re.compile(r"^log-\d{3}$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 ERR = "[ERROR]"
 WARN = "[WARN]"
@@ -125,6 +134,25 @@ def validate_characters(chars, r: Report) -> set[str]:
         )
         if type_ok(data.get("id"), str):
             ids.add(data["id"])
+        # 任意キーの型検査（存在する場合のみ）＋仮名チェック（character-design-guide §0）
+        role_v = data.get("role")
+        if type_ok(role_v, str) and role_v not in VALID_ROLES:
+            r.error(path, f"role 不正 '{role_v}'（protagonist / antagonist / support）")
+        for opt in ("flaw", "quirk", "heat"):
+            if opt in data and not type_ok(data[opt], str):
+                r.error(path, f"{opt}: 文字列でない（{type(data[opt]).__name__}）")
+        for key in ("name_ja", "name_ruby"):
+            val = data.get(key)
+            if type_ok(val, str) and re.search(r"(TBD|未定|（仮）|\(仮\))", val):
+                r.warn(path, f"{key} が仮名のまま（{val}）→ 名前を確定してからプロットへ進むこと")
+        design = data.get("design")
+        if design is not None:
+            if not isinstance(design, dict):
+                r.error(path, "[design] がテーブルでない")
+            else:
+                stv = design.get("screen_time")
+                if stv is not None and (not type_ok(stv, str) or stv not in VALID_SCREEN_TIME):
+                    r.error(path, f"[design].screen_time 不正 '{stv}'（lead / support / minor）")
         basic = data.get("basic")
         if basic is None:
             r.error(path, "[basic] セクション必須")
@@ -160,6 +188,9 @@ def validate_characters(chars, r: Report) -> set[str]:
                 r.error(path, f"relations[{i}]: target 必須(str)")
             else:
                 relations.append((path, i, t))
+            for opt in ("kind", "function", "emotion", "call", "no_compromise", "note"):
+                if opt in rel and not type_ok(rel[opt], str):
+                    r.error(path, f"relations[{i}].{opt}: 文字列でない")
     for path, i, t in relations:
         if t not in ids:
             r.error(path, f"relations[{i}]: target '{t}' が存在しない chara ID")
@@ -366,12 +397,111 @@ def check_proposal_sync(project: Path, chars, r: Report) -> None:
                 )
 
 
+# ---------------------------------------------------------------- 制作ログ
+
+def validate_log(project: Path, ref_ids: set[str], plots, r: Report) -> None:
+    """production-log.toml の検証（スキーマ §8）。構造はエラー、参照先は警告のみ。"""
+    log_path = project / "production-log.toml"
+    if not log_path.is_file():
+        return
+    try:
+        data = tomllib.loads(log_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        r.error(log_path, f"TOML 構文エラー: {e}")
+        return
+    entries = data.get("log")
+    if entries is None:
+        return  # エントリ 0 件は正常（初回の決定は書かない方針）
+    if not isinstance(entries, list):
+        r.error(log_path, "[[log]] は配列で書く")
+        return
+    plot_ids = {d.get("id") for _, d in plots if type_ok(d.get("id"), str)}
+    seen: set[str] = set()
+    for i, e in enumerate(entries):
+        if not isinstance(e, dict):
+            r.error(log_path, f"log[{i}] がテーブルでない")
+            continue
+        check_keys(
+            e,
+            {"id": str, "date": str, "kind": str, "what": str, "why": str, "by": str},
+            log_path, f"log[{i}]", r,
+        )
+        eid = e.get("id")
+        if type_ok(eid, str):
+            if not LOG_ID_RE.match(eid):
+                r.error(log_path, f"log[{i}]: id 形式不正 '{eid}'（期待 log-NNN）")
+            elif eid in seen:
+                r.error(log_path, f"log[{i}]: id 重複 '{eid}'")
+            else:
+                seen.add(eid)
+        d = e.get("date")
+        if type_ok(d, str) and not DATE_RE.match(d):
+            r.error(log_path, f"log[{i}]: date 形式不正 '{d}'（期待 YYYY-MM-DD）")
+        k = e.get("kind")
+        if type_ok(k, str) and k not in VALID_LOG_KINDS:
+            r.error(log_path, f"log[{i}]: kind 不正 '{k}'（change / reject / note）")
+        b = e.get("by")
+        if type_ok(b, str) and b not in VALID_LOG_BY:
+            r.error(log_path, f"log[{i}]: by 不正 '{b}'（agent / human）")
+        aff = e.get("affects")
+        if aff is not None:
+            if not isinstance(aff, list):
+                r.error(log_path, f"log[{i}]: affects は配列で書く")
+            else:
+                for a in aff:
+                    if not type_ok(a, str):
+                        r.error(log_path, f"log[{i}].affects: 文字列でない {a!r}")
+                    elif a in ("proposal", "agents"):
+                        continue
+                    elif a.startswith("plot-ch"):
+                        if a not in plot_ids:
+                            r.warn(log_path, f"log[{i}].affects: '{a}' に対応する plot が見つからない")
+                    elif a not in ref_ids:
+                        r.warn(log_path, f"log[{i}].affects: '{a}' が存在しない ID の可能性")
+
+
+def print_log(project: Path, affects_filter: str | None) -> int:
+    """--log: 制作ログを日付順の表で出力（--affects で絞り込み）。"""
+    log_path = project / "production-log.toml"
+    if not log_path.is_file():
+        print(f"{ERR} production-log.toml が存在しない: {log_path}")
+        return 1
+    try:
+        data = tomllib.loads(log_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"{ERR} production-log.toml: TOML 構文エラー: {e}")
+        return 1
+    entries = [e for e in (data.get("log") or []) if isinstance(e, dict)]
+    if affects_filter:
+        entries = [e for e in entries if affects_filter in (e.get("affects") or [])]
+    entries.sort(key=lambda e: (str(e.get("date", "")), str(e.get("id", ""))))
+    if not entries:
+        print("[OK] 該当エントリなし" if affects_filter else "[OK] log エントリなし（初回の決定は書かない方針）")
+        return 0
+    print(f"{'date':<11} {'kind':<7} {'id':<8} {'by':<6} what")
+    print("-" * 92)
+    for e in entries:
+        what = str(e.get("what", "")).replace("\n", " ")
+        print(f"{str(e.get('date', '')):<11} {str(e.get('kind', '')):<7} {str(e.get('id', '')):<8} {str(e.get('by', '')):<6} {what}")
+        why_lines = str(e.get("why", "")).strip().splitlines()
+        if why_lines:
+            suffix = "…" if len(why_lines) > 1 else ""
+            print(f"{'':<33}└ {why_lines[0]}{suffix}")
+        aff = e.get("affects")
+        if aff:
+            print(f"{'':<33}affects: {', '.join(map(str, aff))}")
+    print(f"\n計 {len(entries)} 件" + (f"（affects = {affects_filter} で絞り込み）" if affects_filter else ""))
+    return 0
+
+
 # ---------------------------------------------------------------- main
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="novel2agent-jp 設定検証")
     ap.add_argument("--project-dir", required=True)
     ap.add_argument("--index", action="store_true", help="ID→名称一覧のみ出力")
+    ap.add_argument("--log", action="store_true", help="制作ログを日付順の表で出力")
+    ap.add_argument("--affects", help="--log と併用。指定 ID を含むエントリに絞る")
     args = ap.parse_args()
 
     project = Path(args.project_dir)
@@ -389,6 +519,9 @@ def main() -> int:
             print(line)
         return 0
 
+    if args.log:
+        return print_log(project, args.affects)
+
     r = Report()
     for path, err in parse_errors:
         print(f"{ERR} {path.name}: TOML 構文エラー: {err}")
@@ -401,6 +534,7 @@ def main() -> int:
     validate_plots(plots, ref_ids, r)
     validate_meta(project, files, r)
     check_proposal_sync(project, chars, r)
+    validate_log(project, ref_ids, plots, r)
 
     print()
     print(f"== 検証結果 ({len(files)} TOML ファイル) ==")

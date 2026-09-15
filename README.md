@@ -20,7 +20,9 @@ TOML（キャラ・世界観・プロット）
 - **章またぎ変化を `[[versions]]` で追跡** — 悪堕ち・成長・所属変更など、1キャラ複数の時点を1ファイルで管理
 - **`proposed` / `confirmed` の二段階確定** — LLM が「たぶんこれ」と書いた未確定設定は `proposed` で追記され、人間が承認してから `confirmed` に。勝手に確定扱いされる事故を防ぐ
 - **複数 LLM による推敲** — 論理・文体・時代考証・読者視点の 4 エージェント構成。MoA（Mixture of Agents）で単一モデルの偏向を排除
-- **44項目 高解像度キャラテンプレート** — 画像生成（ComfyUI 等）との連携を前提とした外見指定
+- **40項目超の高解像度キャラテンプレート** — 画像生成（ComfyUI 等）との連携を前提とした外見指定
+- **キャラ発想ガイド** — 欠点先行・名前先決め・三層チェック（`references/character-design-guide.md`）。設計上の役割（`screen_time` / `function`）は機械検証される
+- **制作ログ `production-log.toml`** — 「なぜ変えたか・何を却下したか」を追記専用で残す。git と併用し、`validate.py --log` で読む
 - **縦書きEPUB/PDF化** — [novel2epub-jp](https://github.com/kgmkm/novel2epub-jp) で A6文庫判へ変換可能
 - **ジャンル不問** — ファンタジー / SF / ミステリ / 恋愛 / 青春 / 歴史 / ホラー etc.
 
@@ -85,6 +87,19 @@ cat example/sample-novel/.context/ch01.md
 
 詳細は [SKILL.md](SKILL.md) および `references/` の各ワークフローを参照。
 
+## Key Workflow
+
+制作は 5 フェーズ。各フェーズの手順書は `references/` の各ワークフローを正とする。
+
+1. **企画フェーズ** — `proposal.md` → 世界観（`worldbuilding/`）→ キャラ（`character/`）→ プロット（`plot/`）。キャラは `character-design-guide.md` の手順（欠点を先に決める・名前を先に決める）で作り、各段階で `validate.py` を回す（`references/planning-workflow.md`）
+2. **プロット検証（執筆前）** — タイムライン・キャラの知識状態・伏線の張り→回収を確認する（Phase A。`references/revision-workflow.md`）
+3. **執筆フェーズ** — 章ごとに `validate.py → pack.py --check → 必要なら pack.py → .context/chNN.md を読んで執筆`。シーンの演出・感情曲線・五感ローテーション・比喩はパックの指示に従う。保存直後に `check_prose.py`（`references/writing-workflow.md`）
+4. **推敲（revision）** — Phase B（整合性・ミクロ）→ Phase C（読者視点・マクロ。C-1 の 6 問 → C-2 キャラ点検 → C-3 感想）。複数 LLM を使える環境では論理 / 文体 / 時代考証 / 読者視点の 4 視点 MoA（手順: `references/moa-manual-orchestration.md`）。完了時に proposed → confirmed の確定を行う
+5. **エクスポート** — `pixiv_export.py` で投稿用に変換。[novel2epub-jp](https://github.com/kgmkm/novel2epub-jp) で縦書き PDF/EPUB 化
+
+- 執筆・推敲で既定の決定を変えた場合、または案を却下した場合は `production-log.toml` に記録する（追記専用）
+- **フェーズ移行時および会話が長くなった際は、コンテキスト圧縮を提案すること。**（Hermes なら `/compress`、Claude Code なら `/compact`、goose なら `/summarize`。詳細: `references/revision-workflow.md`「コンテキスト管理」）
+
 ## 人類側Tips
 
 ### 【最重要】TOML（設定）を人間が修正したら、Agentに報告しよう！
@@ -115,6 +130,15 @@ cat example/sample-novel/.context/ch01.md
 
 が、それをエージェントに調べさせる方法があります。「小説など文章を書くのにオススメな LLM モデルを、直近6か月のネットの反応を検索して教えて」と聞いてみてください。X を検索させるのも効果的です。
 
+### 変更の理由と却下案は production-log.toml に残る
+
+プロジェクトは git 管理を推奨します。git は「何がいつ変わったか」を持ち、`production-log.toml` は「なぜ変えたか・何を却下したか」を持ちます。初回の決定は書きません（proposal.md と TOML 自体が記録です）。変えた時、却下した時にだけ追記されます。人間が読むときは:
+
+```bash
+python scripts/validate.py --project-dir <project> --log
+python scripts/validate.py --project-dir <project> --log --affects plot-ch03
+```
+
 ## このリポジトリのファイル構成
 
 ```
@@ -125,8 +149,10 @@ novel2agent-jp/
 ├── schema/
 │   └── toml-schema.md           ← TOML スキーマ定義（必須キー・検証項目・pack.py 仕様）
 ├── scripts/
-│   ├── validate.py              ← 設定検証（構文・必須キー・ID・参照整合）
+│   ├── validate.py              ← 設定検証（構文・必須キー・ID・参照整合・制作ログ）
 │   ├── pack.py                  ← 文脈パック生成（章ごとの LLM 渡し用 Markdown）
+│   ├── check_prose.py           ← 本文品質検査（空本文・禁止語彙・全角空白）
+│   ├── init.py                  ← プロジェクト雛形生成
 │   ├── pixiv_export.py          ← pixiv 小説投稿用変換
 │   ├── vfm_to_pixiv.py          ← 縦読み記法 → pixiv 変換
 │   └── tests/                   ← スクリプトのテスト
@@ -134,7 +160,9 @@ novel2agent-jp/
 │   ├── planning-workflow.md     ← 企画フェーズ（世界観→キャラ→プロット）
 │   ├── writing-workflow.md      ← 執筆フェーズ（pack → 執筆 → TOML 反映）
 │   ├── revision-workflow.md     ← 推敲フェーズ（Phase A/B/C + MoA 4 視点）
-│   ├── character-template.md    ← キャラ 44 項目 TOML テンプレート（テーブルヘッダ除く）
+│   ├── moa-manual-orchestration.md ← 4 視点 MoA の実行手順（エージェント非依存）
+│   ├── character-template.md    ← キャラ TOML テンプレート（40 項目超）
+│   ├── character-design-guide.md ← キャラ発想ガイド（欠点先行・名前先決め）
 │   ├── metaphor-guide.md        ← 比喩ガイド（クリシェ回避）
 │   ├── sensory-rotation.md      ← 五感ローテーションガイド
 │   ├── vfm-to-pixiv-workflow.md ← 縦読み記法 → pixiv ワークフロー
@@ -159,6 +187,7 @@ my-novel-project/
 ├── proposal.md            ← 企画書（Markdown のまま。あらすじ・テーマ・章構成）
 ├── meta.toml              ← 章の唯一の目次（章番号・plot/novel パス・status）
 ├── AGENTS.md              ← 作品固有ガイド（文体・トーン・禁止事項・初出ふりがな規則）
+├── production-log.toml    ← 制作ログ（追記専用。なぜ変えたか・却下した案）
 │
 ├── character/             ← キャラ TOML（1キャラ1ファイル）
 │   ├── chara-001.toml
@@ -187,6 +216,29 @@ my-novel-project/
 - **Hermes 固有ツール依存の除去** — `session_search` / `memory` / `/compress` への直接言及をなくし、エージェント非依存に
 - **TOML で正規化** — Markdown テンプレートから TOML へ移行（人間も編集可、機械検証も可）
 - **決定論的文脈生成** — LLM に「設定を探させる」旧方式から、`pack.py` が「全部まとめて渡す」新方式へ
+
+## 更新履歴
+
+### v0.3.1（2026-09-16）
+- キャラ発想ガイド `references/character-design-guide.md` を新設。設計キー `flaw` / `quirk` / `heat` / `[design].screen_time` / `[[relations]].function`・`no_compromise` / `[motivation].false_belief` を追加
+- `role` を protagonist / antagonist / support の 3 値に固定（validate が検査）。仮名（TBD）残留の警告を追加
+- 制作ログ `production-log.toml` を新設（schema §8。`validate.py --log`・pack 収録）
+- 推敲 Phase C を縮小（C-1 の 6 問 → C-2 キャラ点検 → C-3 感想）。MoA 視点 4 は「はい/いいえ＋根拠」必須に
+- MoA 手動オーケストレーション `references/moa-manual-orchestration.md` を新設（エージェント非依存の 5 実行パターン）
+- README に Key Workflow を追加。`pack.py` の versions appearance 反映バグ修正・未使用コード削除
+
+### v0.3.0（2026-09-13）
+- `check_prose.py`（本文品質検査）・`init.py`（プロジェクト雛形生成）を新設
+- `pack.py --check` が章単位の鮮度チェックに対応
+- `validate.py` に本文パス存在チェック・proposal 照合・proposed 警告の改善
+
+### v0.2.0（2026-09-13）
+- references 5 本を TOML 版で全面改訂、README 全面改訂・example/sample-novel 同梱
+- pixiv_export / vfm_to_pixiv を新構造（`novel/chNN.md`）に対応
+
+### v0.1.0（2026-09-13）
+- 新スキル骨格（SKILL.md / README / toml-schema）
+- `validate.py` / `pack.py` の実装とテスト
 
 ## 注意
 

@@ -82,6 +82,22 @@ AGENTS_TEMPLATE = """# AGENTS.md — 作品の憲法
 GITIGNORE_TEMPLATE = """.context/
 """
 
+PRODUCTION_LOG_TEMPLATE = """# 制作ログ（追記専用）
+#
+# 企画・執筆・推敲で「既定の決定を変えた」「案を却下した」ときだけ書く。初回の決定は書かない。
+# 新しいエントリは下に足す。過去のエントリは消さない。撤回も新しいエントリとして書く。
+# スキーマ: schema/toml-schema.md §8。読むとき: validate.py --project-dir <project> --log
+#
+# [[log]]
+# id = "log-001"          # log-NNN 連番・重複不可
+# date = "2026-09-15"     # YYYY-MM-DD
+# kind = "change"         # change / reject / note
+# what = "一行で何をしたか"
+# why = '''なぜ変えたか。却下の場合は、なぜ捨てたか'''
+# affects = ["plot-ch01", "chara-001"]   # 章ID / キャラID / "proposal" / "agents"（0件可）
+# by = "agent"            # agent / human
+"""
+
 PLOT_TEMPLATE = None  # 未使用: plot TOML は planning workflow の手順で個別に作る
 
 
@@ -111,6 +127,9 @@ def main() -> int:
             gi.write_text(content.rstrip() + "\n.context/\n", encoding="utf-8")
     else:
         gi.write_text(GITIGNORE_TEMPLATE, encoding="utf-8")
+    plog = project / "production-log.toml"
+    if not plog.exists():
+        plog.write_text(PRODUCTION_LOG_TEMPLATE, encoding="utf-8")
 
     print(f"[OK] プロジェクト雛形を生成: {project}")
     print("  next: proposal.md を書く → proposal_status: confirmed は必ずユーザが変える")

@@ -68,7 +68,7 @@ age = 20
     (c / "chara-002.toml").write_text("""id = "chara-002"
 name_ja = "佐藤太郎"
 name_ruby = "さとう たろう"
-role = "rival"
+role = "support"
 
 [basic]
 gender = "male"

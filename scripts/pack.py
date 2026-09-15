@@ -19,6 +19,7 @@ from pathlib import Path
 
 SOURCE_DIRS = ("character", "worldbuilding", "plot")
 DEFAULT_BUDGET = 100_000  # トークン概算（日本語 ≈ 1 文字 ≈ 1 token）
+APPEARANCE_KEYS = {"hair", "hair_color", "eyes", "skin", "face", "outfit", "outfit_special", "accessory"}
 
 
 def est_tokens(text: str) -> int:
@@ -52,6 +53,21 @@ def by_prefix(files: dict[Path, dict], prefix: str):
             if f.stem.split("-")[0] == prefix or (prefix == "plot" and f.stem.startswith("plot-ch"))]
 
 
+def load_log(project: Path) -> list[dict]:
+    """production-log.toml の [[log]] を読む（スキーマ §8）。無ければ空。"""
+    log_path = project / "production-log.toml"
+    if not log_path.is_file():
+        return []
+    try:
+        data = tomllib.loads(log_path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    entries = data.get("log")
+    if not isinstance(entries, list):
+        return []
+    return [e for e in entries if isinstance(e, dict)]
+
+
 # ---------------------------------------------------------------- versions 解決
 
 def resolve_chara(data: dict, chapter: int) -> dict:
@@ -59,6 +75,7 @@ def resolve_chara(data: dict, chapter: int) -> dict:
 
     versions に [basic] 配下のキー（age / gender / first_person など）が書かれた場合は
     basic テーブルへ反映する（スキーマ §1 の「age などキャラ固有の追加キー」の扱い）。
+    [appearance] 系キー（outfit / hair 等）は appearance テーブルへ反映する。
     """
     out = dict(data)
     basic = dict(out.get("basic") or {})
@@ -73,6 +90,14 @@ def resolve_chara(data: dict, chapter: int) -> dict:
                     continue
                 if k in basic_keys:
                     basic[k] = val
+                elif k in APPEARANCE_KEYS:
+                    app = out.get("appearance")
+                    if app is None or isinstance(app, dict):
+                        app = dict(app or {})
+                        app[k] = val
+                        out["appearance"] = app
+                    else:
+                        out[k] = val
                 else:
                     out[k] = val
     if basic:
@@ -85,7 +110,9 @@ def resolve_chara(data: dict, chapter: int) -> dict:
 
 def render_chara(cid: str, c: dict) -> str:
     basic = c.get("basic", {}) if isinstance(c.get("basic"), dict) else {}
-    lines = [f"### {cid}: {c.get('name_ja', '?')}（{c.get('name_ruby', '')}）"]
+    design = c.get("design") if isinstance(c.get("design"), dict) else {}
+    st = f"［{design['screen_time']}］" if design.get("screen_time") else ""
+    lines = [f"### {cid}: {c.get('name_ja', '?')}（{c.get('name_ruby', '')}）{st}"]
     facts = [f"role: {c.get('role', '?')}"]
     if basic.get("age") is not None:
         facts.append(f"年齢: {basic['age']}")
@@ -93,6 +120,8 @@ def render_chara(cid: str, c: dict) -> str:
         facts.append(f"性別: {basic['gender']}")
     if basic.get("first_person"):
         facts.append(f"一人称: {basic['first_person']}")
+    if basic.get("second_person"):
+        facts.append(f"二人称: {basic['second_person']}")
     lines.append("- " + " / ".join(facts))
     if basic.get("speech_style"):
         lines.append(f"- 口調: {basic['speech_style']}")
@@ -104,6 +133,19 @@ def render_chara(cid: str, c: dict) -> str:
             lines.append(f"- 長所: {p['strengths']}")
         if p.get("weaknesses"):
             lines.append(f"- 短所: {p['weaknesses']}")
+    for key, label in (("flaw", "欠点"), ("quirk", "ズレ"), ("heat", "必死になる対象")):
+        if c.get(key):
+            lines.append(f"- {label}: {c[key]}")
+    m = c.get("motivation")
+    if isinstance(m, dict):
+        if m.get("false_belief"):
+            lines.append(f"- 誤った信念（物語中で崩される）: {m['false_belief']}")
+        if m.get("fears"):
+            lines.append(f"- 恐れ: {m['fears']}")
+        if m.get("catchphrase"):
+            lines.append(f"- 決め台詞: {m['catchphrase']}")
+        if m.get("habits"):
+            lines.append(f"- 癖: {m['habits']}")
     app = c.get("appearance")
     if isinstance(app, dict) and app:
         desc = "、".join(v for v in app.values() if isinstance(v, str))
@@ -112,10 +154,15 @@ def render_chara(cid: str, c: dict) -> str:
     for rel in c.get("relations", []):
         if isinstance(rel, dict):
             parts = [f"{rel.get('target', '?')}（{rel.get('kind', '')}"]
+            if rel.get("function"):
+                parts.append(f"・機能:{rel['function']}")
             if rel.get("emotion"):
                 parts.append(f"・{rel['emotion']}")
             parts.append("）")
-            lines.append("- 関係: " + "".join(parts))
+            text = "- 関係: " + "".join(parts)
+            if rel.get("no_compromise"):
+                text += f"／妥協不可: {rel['no_compromise']}"
+            lines.append(text)
     return "\n".join(lines)
 
 
@@ -231,6 +278,31 @@ def collect_blocks(files: dict[Path, dict], project: Path, chapter: int, plots_b
         body = "\n".join(t for _, t in est_blocks)
         blocks.append(Block("## これまでに確定した出来事（established）\n" + body, priority=4))
 
+    # --- (4b) 制作ログ: priority 4.5。affects が対象章 / 登場キャラに関係する全件 + 直近10件
+    # （スキーマ §8。却下済みの案 reject は再提案防止のため優先的に載せる）
+    log_entries = load_log(project)
+    if log_entries:
+        target_ids = {f"plot-ch{chapter:02d}"} | set(appearing)
+        related: list[dict] = []
+        related_idx: set[int] = set()
+        for i, e in enumerate(log_entries):
+            aff = {str(a) for a in (e.get("affects") or [])}
+            if target_ids & aff:
+                related.append(e)
+                related_idx.add(i)
+        start = max(0, len(log_entries) - 10)
+        recent = [e for i, e in enumerate(log_entries) if i >= start and i not in related_idx]
+        picked = related + recent
+        if picked:
+            log_lines = []
+            for e in picked:
+                why_first = str(e.get("why", "")).strip().splitlines()
+                head = f"- [{e.get('date', '?')}][{e.get('kind', '?')}] {e.get('what', '')}"
+                if why_first:
+                    head += f" — {why_first[0]}"
+                log_lines.append(head)
+            blocks.append(Block("## 制作ログ（なぜ変えたか・却下した案）\n" + "\n".join(log_lines), priority=4.5))
+
     # --- (5) 過去章 summary（古い章から順に落とされる）: priority 5
     summaries = []
     for num in sorted(c for c in plots_by_chapter if c < chapter):
@@ -262,30 +334,6 @@ def collect_blocks(files: dict[Path, dict], project: Path, chapter: int, plots_b
     return blocks, errors
 
 
-def render_established(plots_by_chapter, chapter: int) -> str:
-    recent, rolled, proposed = [], [], []
-    for num in sorted(c for c in plots_by_chapter if c < chapter):
-        _, pd = plots_by_chapter[num]
-        for e in pd.get("established", []):
-            if not isinstance(e, dict) or not e.get("content"):
-                continue
-            if e.get("status") == "proposed":
-                proposed.append(f"- 【未確定】{num}章: {e['content']}")
-            elif chapter - num <= 2:  # 直近2章分は全件
-                recent.append(f"- {num}章: {e['content']}")
-            else:
-                rolled.append((num, e["content"]))
-    if not (recent or rolled or proposed):
-        return ""
-    lines = ["## これまでに確定した出来事（established）"]
-    for num in sorted(set(n for n, _ in rolled)):
-        items = "、".join(c for n, c in rolled if n == num)
-        lines.append(f"- {num}章（ロールアップ）: {items}")
-    lines.extend(recent)
-    lines.extend(proposed)
-    return "\n".join(lines)
-
-
 def meta_chapter_of(project: Path, files: dict[Path, dict], number: int) -> dict | None:
     meta_path = project / "meta.toml"
     if meta_path not in files:
@@ -302,7 +350,7 @@ def build_markdown(blocks: list[Block], budget: int) -> tuple[str, list[str]]:
     """budget 制御（§6.3 削り順）。
 
     priority 6 の直前章本文のみ「末尾から」部分的に削る。
-    それでも超過する場合は priority 5（古い章 summary から）→ 4 → 3 → 2 の順で
+    それでも超過する場合は priority 5（古い章 summary から）→ 4.5（制作ログ）→ 4 → 3 → 2 の順で
     block 単位で落とす。priority 1 は削らない。
     """
     notes: list[str] = []

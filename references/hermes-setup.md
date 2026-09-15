@@ -47,7 +47,7 @@ env -u PYTHONHOME PYTHONPATH= \
 | session_search によるプロジェクト復元 | pack.py 再生成で代替 |
 | memory(action="add") への核心設定保存 | meta.toml / proposal.md に集約 |
 | `/compress` の必須実行 | 趣旨のみ残し提案ベースに（コマンド名はエージェント別） |
-| hermes-fake-moa（並列 MoA 実行） | 存在すれば使う。無い環境では任意の方法で別モデルに投げる（revision-workflow.md の指示テンプレート参照） |
+| hermes-fake-moa（並列 MoA 実行） | 存在すれば使う。無い環境では任意の方法で別モデルに投げる（手順: `references/moa-manual-orchestration.md`） |
 | 1バージョン1キャラ.md | `[[versions]]` に一本化 |
 
 ## 他エージェントでの使用

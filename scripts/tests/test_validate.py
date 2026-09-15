@@ -88,3 +88,54 @@ def test_index_outputs_ids(ok_project):
     assert "chara-001" in out and "桜井美咲" in out
     assert "world-001" in out
     assert "plot-ch01" in out and "覚醒" in out
+
+
+LOG_OK = """[[log]]
+id = "log-001"
+date = "2026-09-13"
+kind = "reject"
+what = "第3章の結末を父娘の和解にする案"
+why = '''丸すぎて主題と矛盾するため却下'''
+affects = ["plot-ch01", "chara-001"]
+by = "human"
+"""
+
+
+def test_production_log_ok_and_view(ok_project):
+    (ok_project / "production-log.toml").write_text(LOG_OK, encoding="utf-8")
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "[ERROR]" not in out
+    code, out = run(ok_project, "--log")
+    assert code == 0, out
+    assert "log-001" in out and "reject" in out and "却下" in out
+    code, out = run(ok_project, "--log", "--affects", "plot-ch01")
+    assert code == 0 and "log-001" in out
+    code, out = run(ok_project, "--log", "--affects", "plot-ch99")
+    assert code == 0 and "該当エントリなし" in out
+
+
+def test_production_log_bad_kind_and_id_exit_1(ok_project):
+    bad = LOG_OK.replace('kind = "reject"', 'kind = "oops"').replace('id = "log-001"', 'id = "log-1"')
+    (ok_project / "production-log.toml").write_text(bad, encoding="utf-8")
+    code, out = run(ok_project)
+    assert code == 1, out
+    assert "kind 不正" in out
+    assert "id 形式不正" in out
+
+
+def test_production_log_affects_typo_warns_only(ok_project):
+    warn = LOG_OK.replace('"chara-001"', '"chara-999"')
+    (ok_project / "production-log.toml").write_text(warn, encoding="utf-8")
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "chara-999" in out  # 参照ミスは警告のみで exit 0
+
+
+def test_character_role_enum_exit_1(ok_project):
+    c = ok_project / "character" / "chara-001.toml"
+    c.write_text(c.read_text(encoding="utf-8").replace('role = "protagonist"', 'role = "hero"'),
+                 encoding="utf-8")
+    code, out = run(ok_project)
+    assert code == 1, out
+    assert "role 不正" in out

@@ -17,9 +17,12 @@
 
 ```toml
 id = "chara-001"                    # 必須・ファイル名と一致
-name_ja = "桜井美咲"                # 必須
+name_ja = "桜井美咲"                # 必須。仮名の間は "TBD ……"（validate が警告）
 name_ruby = "さくらい みさき"        # 必須（初出ふりがな検証用）
-role = "heroine"                    # 必須。protagonist/heroine/rival/mentor/mob 等
+role = "protagonist"                # 必須。protagonist / antagonist / support のいずれか
+flaw = "頼ることが苦手で一人で抱え込む"  # 推奨・作中で一度は判断を誤らせる欠点
+quirk = "学者なのに部屋に漫画が二冊だけある"  # 推奨・その人物だけのズレ
+heat = "母の死に意味を見出したい"    # 推奨・必死になる対象（各章に一度は場面を）
 
 [basic]                             # 必須セクション
 gender = "female"
@@ -38,14 +41,21 @@ keywords = ["真面目", "好奇心旺盛"]
 strengths = "思いやりがある"
 weaknesses = "やや内向的"
 
-[background]                        # 任意・散文OK
-origin = '''幼少期に母親を病気で亡くし、医療文学を志す。'''
+[motivation]                        # 任意（執筆に強く効く。設計は character-design-guide.md）
+core_wound = '''幼少期に母親を病気で亡くし、医療文学を志す。'''
+principle = "他人を守りたい"          # 意思決定の最優先基準
+false_belief = "努力すれば必ず報われる"  # 本人は正しいと信じているが物語中で崩される考え
 
 [[relations]]                       # 任意・0件以上
 target = "chara-002"                # 必須・存在チェック対象 # 佐藤太郎
-kind = "学友"
+kind = "学友"                       # 関係の名前
+function = "contrast"               # 任意・作劇上の役割（contrast / outsider 等）。kind と混ぜない
 emotion = "信頼"
+no_compromise = "謝罪がない限り和解しない"  # 任意・この関係で妥協できない理由（敵対関係では必ず書く）
 note = "第1章で出会う"
+
+[design]                            # 任意・作劇上の設計
+screen_time = "lead"                # lead / support / minor のいずれか。他の値は validate エラー
 
 [[versions]]                        # 任意・章またぎ変化（属性変更の唯一の記録場所）
 from_chapter = 3                    # 必須
@@ -60,6 +70,10 @@ note = "覚醒後。制服が黒い戦闘服に"
 - `[basic]` 配下のキー（`age` / `gender` / `first_person` / `speech_style` / `height_cm`）を versions で書いた場合、pack.py は `[basic]` の対応するキーに反映して出力する（例：`versions.age = 19` → 出力上は `basic.age = 19` として解決）
 - versions 同士の章範囲が重複したら validate エラー
 - `age` などキャラ固有の追加キーは自由（スキーマは必須キーのみ検証）
+- キャラ設計の手順は `references/character-design-guide.md` を正とする（欠点 `flaw` を先に決める・名前を先に決める等）
+- `role` は protagonist / antagonist / support の 3 値（validate 検査）。出番の重みは `[design].screen_time`（lead / support / minor）で表す
+- `flaw` / `quirk` / `heat` と `[design].screen_time` と `[[relations]].function` / `no_compromise` は任意キー。列挙値違い・仮名（TBD）残留は validate が検査
+- pack は flaw / quirk / heat / false_belief / fears / catchphrase / habits / second_person と screen_time をキャラ情報に出力する。`height_cm` / `birthday` は出力しない（画像生成・イベント管理用のデータ）
 
 ---
 
@@ -162,8 +176,12 @@ status = "draft"                    # draft / written / revised / confirmed
 | 10 | novel 本文の禁止語彙（worldbuilding [[constraints]] と照合） | 警告 |
 | 11 | 初出キャラのふりがな（本文との照合） | 警告 |
 | 12 | 一人称の揺れ（本文 vs character.first_person） | 警告 |
+| 13 | production-log の必須キー・kind/by 列挙値・id 形式/重複・date 形式 | エラー |
+| 14 | production-log の affects 参照先の存在 | 警告 |
+| 15 | character role の列挙値（protagonist / antagonist / support） | エラー |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
+`validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§8）。
 
 > **実装状況（v0.3.0）**：1〜9 に加え、`meta.toml chapters[].novel` パス存在チェックと proposal↔character 照合（人物名・ふりがな・警告系）を `scripts/validate.py` に実装済み。10〜12 の本文検査は `scripts/check_prose.py`（新設）が担当する。planning 中（`work.status = "planning"`）の `[[chapters]]` 未記入は警告（許容）。
 
@@ -180,6 +198,7 @@ status = "draft"                    # draft / written / revised / confirmed
 4. 前章：`novel/chN-1.md` 全文。それ以前：各章の `summary`（confirmed のみ、未確定は established から代替）
 5. 未回収伏線：`resolve_chapter ≦ N` かつ `resolved_at` なし
 6. established：N 未満の章の全件。`status = "proposed"` は「【未確定】」を頭に付記
+7. 制作ログ：§8 のエントリのうち `affects` に対象章 ID・対象章の登場キャラ ID を含む全件 + 直近 10 件。`- [date][kind] what — why の一行目` の一行
 
 ### 6.2 established のロールアップ（長編対策）
 30章超で established 全件展開は budget を圧迫するため、次の規則で圧縮する。
@@ -195,10 +214,11 @@ status = "draft"                    # draft / written / revised / confirmed
 2. worldbuilding 制約
 3. 未回収伏線 — **削らない**（§6.5 抽出漏れ禁止のため、budget 制御の対象外）
 4. established（proposed 全件 → 6.2 ロールアップ後。章単位の block で落とす）
+4b. 制作ログ（§8。1 block 単位で落とす）
 5. それ以前の章 summary（古い章から順に落とす。章ごと 1 block）
 6. 直前章本文（末尾から削る。削りきれない場合は block 丸ごと削除）
 
-> 補足：実装上は「priority 1（対象章＋キャラ）と伏線を固定し、本文 → summary → established → 制約の順で落とす」。budget に全く収まらない場合は priority 1 のみ残す。[OK/NOTE ログ](../scripts/pack.py)に削った内容を明示出力する。
+> 補足：実装上は「priority 1（対象章＋キャラ）と伏線を固定し、本文 → summary → 制作ログ → established → 制約の順で落とす」。budget に全く収まらない場合は priority 1 のみ残す。[OK/NOTE ログ](../scripts/pack.py)に削った内容を明示出力する。
 
 ### 6.5b established の budget 粒度
 established は「章ごとに集約した 1 block」とする（直近2章分の全件行＋ロールアップ行を 1 block に束ねない。古い章から章単位で落とせる粒度を保つ）。
@@ -219,3 +239,32 @@ pack.py は新構成における唯一の情報源（単一点）のため、以
 ## 7. serialize 規則（廃止）
 
 vecmemori への fact 化は行わないため serialize 規則は存在しない。LLM に渡す表現は pack.py の Markdown レンダリングに一元化される。
+
+---
+
+## 8. production-log（production-log.toml）
+
+制作上の判断を記録する。作中の事実ではない（作中の事実は `[[established]]`、属性変化は `[[versions]]`）。追記専用で、過去のエントリは消さない。撤回も新しいエントリとして書く。初回の決定は書かない（proposal.md と TOML 自体が記録になる。変えた時、却下した時に書く）。
+
+```toml
+[[log]]
+id = "log-004"                        # 必須・log-NNN 連番・重複不可
+date = "2026-09-13"                   # 必須・YYYY-MM-DD
+kind = "change"                       # 必須・change / reject / note
+what = "第3章の結末を「父娘の和解」から「父が一人で焦げた飯を食べる」に変更"   # 必須・一行
+why = '''元の結末は丸すぎ、proposal.md の悲観的な主題と矛盾した'''            # 必須・複数行可
+affects = ["plot-ch03", "plot-ch04", "chara-001"]   # 任意・0件可。章ID / キャラID / "proposal" / "agents"
+by = "human"                          # 必須・human / agent
+```
+
+**kind の意味**
+- `change`: 既定の決定を変えた。proposal.md / TOML の内容を変更した時に書く
+- `reject`: 検討して採用しなかった案。同じ案を後で再提案しないための記録。git には残らない情報なので、制作ログの中で最も価値が高い
+- `note`: 判断ではないが残したい制作上の気づき。方針の確認など
+
+**規則**
+- `affects` に章 ID とキャラ ID を書く。proposal.md 全体に効く場合は `"proposal"`、AGENTS.md に効く場合は `"agents"`
+- エージェントが書く場合は `by = "agent"`。人間の承認前でも書いてよい。人間が確認したら `by = "human"` に変える（または人間が書く）
+- 参照先（affects）の存在チェックは validate が**警告**で行う（タイポで執筆を止めない）。id 形式・重複・kind/by 列挙値・date 形式はエラー
+- 人間は生ファイルを通読しない。読むときは `validate.py --log` を使う
+- pack.py は「対象章 / 登場キャラに関係するエントリ全件 + 直近 10 件」を収録（§6.1-7。budget 超過時は summary の次に落とされる、§6.3-4b）

@@ -15,8 +15,9 @@ python scripts/pack.py --project-dir <project> --chapter N
 
 1. AGENTS.md（作品の憲法）を読む
 2. proposal.md を読む
-3. 上記の固定手順でパックを生成して読む
-4. 既存完成原稿があれば 1 本読んで文体のトーンを「正解データ」として採用する。設定の拡張解釈はしない（AGENTS.md にない要素を独自に追加しない）
+3. 制作ログの直近 10 件を読む（`python scripts/validate.py --project-dir <project> --log`）。直近の方針変更と却下済みの案を把握する（対象章関連分はパックにも入る）
+4. 上記の固定手順でパックを生成して読む
+5. 既存完成原稿があれば 1 本読んで文体のトーンを「正解データ」として採用する。設定の拡張解釈はしない（AGENTS.md にない要素を独自に追加しない）
 
 ## 執筆実行
 
@@ -41,6 +42,7 @@ python scripts/pack.py --project-dir <project> --chapter N
 | 新たな伏線 | 章 TOML の `[[foreshadowing]]` | `resolve_chapter` は必須。実績は回収時に `resolved_at` |
 | 章要約 | 章 TOML の `summary` | `summary_status = "proposed"` で記入 → 人間が confirmed |
 | 執筆完了 | meta.toml の該当 `[[chapters]].status` | `draft` → `written` |
+| 執筆中に既定の決定を変えた／提案が却下された | production-log.toml | `by = "agent"` で追記 |
 
 LLM が「事実」として自信のない追記は、必ず `status = "proposed"` を付ける。**proposed は validate が警告し、pack は【未確定】付きで次章パックに含める**（黙って省略しない）。
 
