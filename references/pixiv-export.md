@@ -242,5 +242,6 @@ python scripts/pixiv_export.py --project-dir <project> --check-length
 
 - **挿絵作成**: `illustration-guide.md` — シーン別プロンプト作成・生成フロー
 - **縦読み変換**: `vfm-to-pixiv-workflow.md` — VFM記法を使う場合の前段
+- **カクヨム投稿**: `vfm-to-kakuyomu-workflow.md` — カクヨム向けの変換と投稿手順
 - **本文の置き場所**: `writing-workflow.md` — ソース `novel/chNN.md` の作成手順
 - **推敲**: `revision-workflow.md` — pixiv投稿前の最終チェックとして流用可

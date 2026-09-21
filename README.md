@@ -15,7 +15,7 @@ AIコーディングエージェントと一緒に日本語の小説を作るた
 - **キャラの作り方ガイド付き** — 欠点を先に決める・名前を先に決めるなど、発想の手順から支援します
 - **制作ログが残ります** — 「なぜ変えたか・何を却下したか」を記録します。後から見返せます
 - **挿絵の画像生成支援** — シーン選定からプロンプト提案まで対応します。ComfyUI なら生成からチェックまで半自動で進められます
-- **pixiv投稿・縦書きEPUB/PDF出力** — 投稿用への変換と、[novel2epub-jp](https://github.com/kgmkm/novel2epub-jp) によるA6文庫判の縦書きPDF・EPUB化に対応しています
+- **pixiv投稿・カクヨム投稿・縦書きEPUB/PDF出力** — 投稿用への変換と、[novel2epub-jp](https://github.com/kgmkm/novel2epub-jp) によるA6文庫判の縦書きPDF・EPUB化に対応しています
 - **ジャンル不問** — ファンタジー / SF / ミステリ / 恋愛 / 青春 / 歴史 / ホラーなど、どれでも使えます
 
 ## 作例
@@ -115,6 +115,7 @@ novel2agent-jp/
 │   ├── init.py                  ← プロジェクト雛形生成
 │   ├── pixiv_export.py          ← pixiv 小説投稿用変換
 │   ├── vfm_to_pixiv.py          ← 縦読み記法 → pixiv 変換
+│   ├── vfm_to_kakuyomu.py       ← 縦読み記法 → カクヨム変換
 │   └── tests/                   ← スクリプトのテスト
 ├── references/
 │   ├── planning-workflow.md     ← 企画フェーズ（世界観→キャラ→プロット）
@@ -128,6 +129,7 @@ novel2agent-jp/
 │   ├── pixiv-export.md          ← pixiv 投稿用変換の手順
 │   ├── illustration-guide.md    ← 挿絵生成ワークフロー
 │   ├── vfm-to-pixiv-workflow.md ← 縦読み記法 → pixiv ワークフロー
+│   ├── vfm-to-kakuyomu-workflow.md ← 縦読み記法 → カクヨムワークフロー
 │   └── hermes-setup.md          ← Hermes 固有の環境セットアップ（他エージェントでは不要）
 ```
 
@@ -170,6 +172,10 @@ my-novel-project/
 - **設定ファイルは人間が読んで直せる形式になりました** — 執筆に必要な設定はエージェントが自動でそろえます
 
 ## 更新履歴
+
+### v0.4.0
+- カクヨム投稿対応 — `references/vfm-to-kakuyomu-workflow.md`（縦読み記法→カクヨム記法の対比・投稿手順）と `scripts/vfm_to_kakuyomu.py`（VFM→カクヨム変換。ルビ・傍点・場面転換・検証）を新設。pixiv 版と同構造
+- SKILL.md 参照表と README ファイル構成に両ファイルを追加
 
 ### v0.3.4
 - schema 節番号を詰めた（production-log を §7 に。pack 6.4–6.6 を読み順に並べ替え）

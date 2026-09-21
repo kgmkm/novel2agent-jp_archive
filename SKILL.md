@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.3.4
+version: 0.4.0
 ---
 
 # novel2agent-jp
@@ -46,6 +46,7 @@ TOML（設定・プロット・キャラ・世界観）
 | `references/pixiv-export.md` | pixiv投稿用変換の手順（エクスポート時に読む） |
 | `references/illustration-guide.md` | 挿絵生成ワークフロー（挿絵を作るときに読む） |
 | `references/vfm-to-pixiv-workflow.md` | 縦読み記法→pixiv変換の記法対比（VFMを使うときに読む） |
+| `references/vfm-to-kakuyomu-workflow.md` | 縦読み記法→カクヨム変換の記法対比（カクヨム投稿時に読む） |
 | `references/hermes-setup.md` | Hermes 固有の環境セットアップ（他エージェントでは不要） |
 
 ## 本文保存の鉄則（事故対策）
@@ -64,3 +65,4 @@ CLI の詳細は各参照先。ここは用途の索引。
 | `scripts/init.py` | プロジェクト雛形生成 | `references/planning-workflow.md` §0 |
 | `scripts/pixiv_export.py` | pixiv 投稿用変換（レガシー `NNN-タイトル.md` も受理） | `references/pixiv-export.md` |
 | `scripts/vfm_to_pixiv.py` | 縦読み記法 → pixiv タグ | `references/vfm-to-pixiv-workflow.md` |
+| `scripts/vfm_to_kakuyomu.py` | 縦読み記法 → カクヨム記法 | `references/vfm-to-kakuyomu-workflow.md` |

@@ -74,6 +74,8 @@ done
 
 投稿画面での作業（タイトル・タグ・プレビュー等）は `references/pixiv-export.md`「pixiv投稿時の追加作業」。
 
+カクヨム向けの変換は `references/vfm-to-kakuyomu-workflow.md`（記法も投稿手順も別物。カクヨムの独自記法はルビと傍点のみ）。
+
 ## 既知の制限
 
 - **画像**: pixiv ではイラスト ID が必要。ファイルパスは変換時に除去されるため、投稿後に手動で `pixivimage:XXXXX` タグを挿入する必要がある
