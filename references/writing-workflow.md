@@ -1,4 +1,4 @@
-# 執筆ワークフロー（TOML 版）
+# 執筆ワークフロー
 
 ## 固定手順（冒頭に必ずこの順で回す）
 
@@ -22,11 +22,17 @@ python scripts/pack.py --project-dir <project> --chapter N
 ## 執筆実行
 
 1. 該当章の `.context/chNN.md` に忠実に。シーンごとに `演出:` を確認してから書く
-2. **文体： 三人称過去形を基本。キャラの口調・一人称はパックの記載と一貫させる**
+2. **文体： 三人称過去形を基本。キャラの口調・一人称はパックの記載と一貫させる。台詞はその時点の知識状態に合致させる**
 3. **五感ローテーション： シーンごとに視覚以外の感覚（聴覚・触覚・嗅覚・味覚）を 2 つ以上**（references/sensory-rotation.md）
 4. **比喩： シーンごとに 1〜2 個。クリシェ回避**（references/metaphor-guide.md）
 5. 本文は `novel/chNN.md` に保存。plot TOML や .context に本文を書き戻さない
-   - **保存直後に必ず確認する**: ファイルが存在し、見出し以外の本文が入っているか（`python scripts/check_prose.py --project-dir <project>`）。LLM の編集経路は本文を空にしたまま見出しと空行だけを保存する事故が実例としてある — 保存後の本文消失に気づかないまま次章へ進まないこと
+   - **保存直後に必ず確認する**: ファイルが存在し、見出し以外の本文が入っているか。LLM の編集経路は本文を空にしたまま見出しと空行だけを保存する事故が実例としてある — 保存後の本文消失に気づかないまま次章へ進まないこと
+     ```bash
+     python scripts/check_prose.py --project-dir <project>            # 全章
+     python scripts/check_prose.py --project-dir <project> --chapter N
+     python scripts/check_prose.py --project-dir <project> --min-chars 200
+     python scripts/check_prose.py --project-dir <project> --strict   # 警告でも exit 1
+     ```
    - **Markdown 段落は空白なし**: 日本語原稿でも段落頭に全角空白（`\u3000`）を入れない。エージェントの編集経路によって壊れる可能性があるため作品規則とする（check_prose.py が警告する）
 6. **執筆中の時代考証**：一文ごとに「時代 / 文化圏 / キャラ知識」の 3 点を意識する。`[[constraints]]` の禁止語彙は最初から使わない（事後修正より執筆時抑制）
 7. ユーザが続きを書いたらその直後から再開。意見を求められたら作品クオリティ最大化の方向で提案
@@ -85,15 +91,3 @@ python scripts/pack.py --project-dir <project> --chapter <次の章>
 ## 推敲への引き継ぎ
 
 本文執筆後、references/revision-workflow.md の Phase B（整合性）→ Phase C（読者視点）へ。推敲完了時に proposed → confirmed 変更を忘れないこと。
-
-## 執筆クオリティ基準
-
-| 項目 | 基準 |
-|------|------|
-| 文体 | 三人称過去形。口調・一人称の一致 |
-| 五感 | 視覚以外 2 つ以上/シーン |
-| 比喩 | 1〜2 個/シーン。クリシェ回避 |
-| 台詞 | キャラの知識状態（Phase A-2 で明記したもの）に合致 |
-| 伏線 | 張り→回収が TOML 上で追跡可能（foreshadowing/resolved_at） |
-| 時代 | `[[constraints]]` との照合済み |
-| 整合性 | 章間の数値・事実が TOML 一貫（pack の established で確認） |

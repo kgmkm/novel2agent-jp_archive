@@ -15,13 +15,7 @@
 - 物語の転換点（出会い、別れ、覚醒、敗北）
 - 各章から最低 1 シーン
 
-```bash
-# 対象章のパックを再生成して読む（キャラ・制約・伏線・established入り）
-python scripts/pack.py --project-dir <project> --chapter N
-# → .context/chNN.md がシーン選定の一次資料。TOML群の直接全読みはしない
-```
-
-ユーザに候補を提示し、採用シーンを確定する。
+一次資料は対象章の `.context/chNN.md`（集め方は §3-1）。ユーザに候補を提示し、採用シーンを確定する。
 
 ---
 

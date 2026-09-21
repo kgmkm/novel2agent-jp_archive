@@ -63,6 +63,12 @@ Claude Code など他のエージェントでは、各エージェントのス�
 
 ## 人類側Tips
 
+### 世界観・キャラ・プロットは納得いくまで編集しよう
+
+だいたい上記の順にまとめてくれますが、ここは AI にまかせっぱなしにせず、必ず人間が確認しましょう。「あれ？」「ちょっとイメージ違う」が出た場合、その場で TOML を直すか、AI に違和感を伝えて変えてもらってください。プロットが固まってから遡って世界観やキャラを直すのも全然アリです。この3つの出来が、小説の品質を決定します。ここ一番の頑張りどころなのでちゃんと読め！なおせ！
+
+TOML を直したら、下の【最重要】の手順で Agent に報告してください。
+
 ### 【最重要】TOML（設定）を人間が修正したら、Agentに報告しよう！
 
 設定の正しい置き場所は TOML ファイルだけです。AIはこのファイルを読み書きして執筆します。
@@ -72,12 +78,6 @@ Claude Code など他のエージェントでは、各エージェントのス�
 ### 作業の切れ目に長文コンテキストを圧縮しよう
 
 話のピンポンが長くなると LLM の性能が落ちます。作業の切れ目（例：キャラ設定が終わってプロットに入る手前）に、エージェントのコンテキスト圧縮機能を使いましょう（Hermes なら `/compress`、Claude Code なら `/compact`、goose なら `/summarize` 等）。スキル側にも、切れ目で圧縮を提案するよう伝えています。
-
-### 世界観・キャラ・プロットは納得いくまで編集しよう
-
-だいたい上記の順にまとめてくれますが、ここは AI にまかせっぱなしにせず、必ず人間が確認しましょう。「あれ？」「ちょっとイメージ違う」が出た場合、その場で TOML を直すか、AI に違和感を伝えて変えてもらってください。プロットが固まってから遡って世界観やキャラを直すのも全然アリです。この3つの出来が、小説の品質を決定します。ここ一番の頑張りどころなのでちゃんと読め！なおせ！
-
-TOML を直したら、上の【最重要】の手順で Agent に報告してください。
 
 ### プロット完成後は、小説を……書かずに推敲を依頼しよう！
 
@@ -171,6 +171,12 @@ my-novel-project/
 
 ## 更新履歴
 
+### v0.3.4
+- schema 節番号を詰めた（production-log を §7 に。pack 6.4–6.6 を読み順に並べ替え）
+- SKILL.md から手順・CLI の再掲を外し、参照表＋契約4行に縮小。詳細は references / schema へ
+- revision の MoA プロンプト全文を `moa-manual-orchestration.md` に一本化。planning のキャラ TOML 例を template へ委譲
+- writing 末尾の品質基準表を執筆実行へ畳む。挿絵 §1 の pack 再掲を §3-1 に一本化。AGENTS.md 読込は hermes-setup へ。vfm の投稿 UI 手順は pixiv-export へ
+
 ### v0.3.3
 - README を人間向けに改訂（敬体化・開発者用語の除去・Key Workflow 削除。エージェント向け詳細は SKILL.md に集約）
 - `example/` を削除（動作確認は `scripts/tests/` の pytest に一本化）。クイックスタート節を削除
@@ -182,7 +188,7 @@ my-novel-project/
 ### v0.3.1（2026-09-16）
 - キャラ発想ガイド `references/character-design-guide.md` を新設。設計キー `flaw` / `quirk` / `heat` / `[design].screen_time` / `[[relations]].function`・`no_compromise` / `[motivation].false_belief` を追加
 - `role` を protagonist / antagonist / support の 3 値に固定（validate が検査）。仮名（TBD）残留の警告を追加
-- 制作ログ `production-log.toml` を新設（schema §8。`validate.py --log`・pack 収録）
+- 制作ログ `production-log.toml` を新設（当時 schema §8。現 §7。`validate.py --log`・pack 収録）
 - 推敲 Phase C を縮小（C-1 の 6 問 → C-2 キャラ点検 → C-3 感想）。MoA 視点 4 は「はい/いいえ＋根拠」必須に
 - MoA 手動オーケストレーション `references/moa-manual-orchestration.md` を新設（エージェント非依存の 5 実行パターン）
 - README に Key Workflow を追加。`pack.py` の versions appearance 反映バグ修正・未使用コード削除

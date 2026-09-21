@@ -1,4 +1,4 @@
-# Hermes 固有セットアップ（references/hermes-setup.md）
+# Hermes 固有セットアップ
 
 このファイルは Hermes Agent で novel2agent-jp を使うときの環境固有の話だけを扱う。
 ワークフロー本体（planning / writing / revision）はエージェント非依存のため、これらのページは他エージェント（Claude Code / opencode / goose 等）でもそのまま使える。

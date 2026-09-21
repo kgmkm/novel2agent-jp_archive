@@ -181,9 +181,9 @@ status = "draft"                    # draft / written / revised / confirmed
 | 15 | character role の列挙値（protagonist / antagonist / support） | エラー |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
-`validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§8）。
+`validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§7）。
 
-> **実装状況（v0.3.0）**：1〜9 に加え、`meta.toml chapters[].novel` パス存在チェックと proposal↔character 照合（人物名・ふりがな・警告系）を `scripts/validate.py` に実装済み。10〜12 の本文検査は `scripts/check_prose.py`（新設）が担当する。planning 中（`work.status = "planning"`）の `[[chapters]]` 未記入は警告（許容）。
+項目 10〜12 の本文検査は `scripts/check_prose.py`。planning 中（`work.status = "planning"`）の `[[chapters]]` 未記入は警告（許容）。
 
 ---
 
@@ -198,7 +198,7 @@ status = "draft"                    # draft / written / revised / confirmed
 4. 前章：`novel/chN-1.md` 全文。それ以前：各章の `summary`（confirmed のみ、未確定は established から代替）
 5. 未回収伏線：`resolve_chapter ≦ N` かつ `resolved_at` なし
 6. established：N 未満の章の全件。`status = "proposed"` は「【未確定】」を頭に付記
-7. 制作ログ：§8 のエントリのうち `affects` に対象章 ID・対象章の登場キャラ ID を含む全件 + 直近 10 件。`- [date][kind] what — why の一行目` の一行
+7. 制作ログ：§7 のエントリのうち `affects` に対象章 ID・対象章の登場キャラ ID を含む全件 + 直近 10 件。`- [date][kind] what — why の一行目` の一行
 
 ### 6.2 established のロールアップ（長編対策）
 30章超で established 全件展開は budget を圧迫するため、次の規則で圧縮する。
@@ -212,21 +212,21 @@ status = "draft"                    # draft / written / revised / confirmed
 
 1. 対象章メタデータ・登場キャラ（versions 解決済）— **削らない**
 2. worldbuilding 制約
-3. 未回収伏線 — **削らない**（§6.5 抽出漏れ禁止のため、budget 制御の対象外）
+3. 未回収伏線 — **削らない**（§6.6 抽出漏れ禁止のため、budget 制御の対象外）
 4. established（proposed 全件 → 6.2 ロールアップ後。章単位の block で落とす）
-4b. 制作ログ（§8。1 block 単位で落とす）
+4b. 制作ログ（§7。1 block 単位で落とす）
 5. それ以前の章 summary（古い章から順に落とす。章ごと 1 block）
 6. 直前章本文（末尾から削る。削りきれない場合は block 丸ごと削除）
 
 > 補足：実装上は「priority 1（対象章＋キャラ）と伏線を固定し、本文 → summary → 制作ログ → established → 制約の順で落とす」。budget に全く収まらない場合は priority 1 のみ残す。[OK/NOTE ログ](../scripts/pack.py)に削った内容を明示出力する。
 
-### 6.5b established の budget 粒度
+### 6.4 established の budget 粒度
 established は「章ごとに集約した 1 block」とする（直近2章分の全件行＋ロールアップ行を 1 block に束ねない。古い章から章単位で落とせる粒度を保つ）。
 
-### 6.4 鮮度チェック（pack 忘れガード）
-`pack.py --check`：`character/`・`worldbuilding/`・`plot/`・`novel/` の mtime が対象 `.context/chNN.md` より新しい場合に警告を出す。**`--chapter N` 付きの場合は第 N 章のパックを構成する原典だけを比較する**（対象章とそれ以前の章の plot/novel。後続章の本文更新で前章パックが誤判定されない）。章指定なしの場合は全パック一括。執筆ワークフロー冒頭の固定1手：`validate.py → pack.py --check → 必要なら pack.py → .context/chNN.md を読む`。
+### 6.5 鮮度チェック（pack 忘れガード）
+`pack.py --check`：`character/`・`worldbuilding/`・`plot/`・`novel/` の mtime が対象 `.context/chNN.md` より新しい場合に警告を出す。**`--chapter N` 付きの場合は第 N 章のパックを構成する原典だけを比較する**（対象章とそれ以前の章の plot/novel。後続章の本文更新で前章パックが誤判定されない）。章指定なしの場合は全パック一括。手順の本体は `references/writing-workflow.md` 冒頭。
 
-### 6.5 テスト要件（P1 受け入れ条件）
+### 6.6 テスト要件（P1 受け入れ条件）
 pack.py は新構成における唯一の情報源（単一点）のため、以下は実装と同時にテストで担保する。
 
 - versions の重複・逆転の解決が仕様通りであること
@@ -236,7 +236,7 @@ pack.py は新構成における唯一の情報源（単一点）のため、以
 
 ---
 
-## 8. production-log（production-log.toml）
+## 7. production-log（production-log.toml）
 
 制作上の判断を記録する。作中の事実ではない（作中の事実は `[[established]]`、属性変化は `[[versions]]`）。追記専用で、過去のエントリは消さない。撤回も新しいエントリとして書く。初回の決定は書かない（proposal.md と TOML 自体が記録になる。変えた時、却下した時に書く）。
 

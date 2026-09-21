@@ -1,4 +1,4 @@
-"""scripts/tests/test_pack.py — pack.py の受け入れテスト (schema §6.5)
+"""scripts/tests/test_pack.py — pack.py の受け入れテスト (schema §6.6)
 
 - versions の重複・逆転解決が仕様通り
 - 未回収伏線の抽出漏れなし（resolved_at 有無の境界）

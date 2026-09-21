@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.3.3
+version: 0.3.4
 ---
 
 # novel2agent-jp
@@ -28,9 +28,7 @@ TOML（設定・プロット・キャラ・世界観）
 
 ## 執筆セッション開始時の固定手順
 
-```
-scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生成 → .context/chNN.md を読んで執筆
-```
+手順の本体は `references/writing-workflow.md` 冒頭。validate → pack --check → 必要なら再生成 → `.context/chNN.md` を読んで執筆。
 
 ## 参照
 
@@ -52,65 +50,17 @@ scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生�
 
 ## 本文保存の鉄則（事故対策）
 
-- **Markdown 段落は空白なし**: 段落頭に全角空白を入れない（編集経路で本文が壊れる実例あり）
-- **保存直後に `check_prose.py` を回す**: 本文が空になっていないかを機械で確認してから次へ進む
+詳細は `references/writing-workflow.md`「執筆実行」。段落頭の全角空白禁止。保存直後に `check_prose.py`。
 
 ## Scripts
 
-### `scripts/validate.py` — 設定検証
+CLI の詳細は各参照先。ここは用途の索引。
 
-```bash
-python scripts/validate.py --project-dir <project>           # 構造検証（エラー 1 件で exit 1）
-python scripts/validate.py --project-dir <project> --index   # ID→名称一覧のみ
-python scripts/validate.py --project-dir <project> --log     # 制作ログの表出力（--affects で絞り込み）
-```
-
-検証項目は `schema/toml-schema.md` §5。proposed 残留は警告（exit 0）。
-
-### `scripts/pack.py` — コンテキストパック生成
-
-```bash
-python scripts/pack.py --project-dir <project> --chapter N            # .context/chNN.md 生成
-python scripts/pack.py --project-dir <project> --chapter N --check    # 生成物の鮮度チェックのみ
-python scripts/pack.py --project-dir <project> --chapter N --budget 80000
-```
-
-出力仕様は `schema/toml-schema.md` §6。未回収伏線は budget でも削らない。
-
-### `scripts/check_prose.py` — 本文品質チェック
-
-```bash
-python scripts/check_prose.py --project-dir <project>            # 全章検査
-python scripts/check_prose.py --project-dir <project> --chapter N
-python scripts/check_prose.py --project-dir <project> --min-chars 200
-python scripts/check_prose.py --project-dir <project> --strict   # 警告でも exit 1
-```
-
-検査: 本文存在（空本文・最低文字数）／段落頭全角空白／禁止語彙（worldbuilding constraints）／一人称の揺れ／章見出し。**本文保存直後に必ず実行する**。
-
-### `scripts/init.py` — プロジェクト雛形生成
-
-```bash
-python scripts/init.py --project-dir <path>
-```
-
-ディレクトリ一式 + proposal.md / meta.toml / AGENTS.md / .gitignore / production-log.toml の雛形を作る。既存 meta.toml は上書きしない。
-
-### `scripts/pixiv_export.py` — pixiv 投稿用変換
-
-`novel/chNN.md`（旧 `NNN-タイトル.md` も受理）を pixiv 小説投稿用単一ファイルへ統合。手順の詳細は `references/pixiv-export.md`。
-
-```bash
-python scripts/pixiv_export.py --project-dir <project>            # export/pixiv.md に統合
-python scripts/pixiv_export.py --project-dir <project> --split    # 50,000字超過時に章分割
-python scripts/pixiv_export.py --project-dir <project> --verify   # 本文が改変されていないか差分検証
-python scripts/pixiv_export.py --project-dir <project> --check-length
-```
-
-### `scripts/vfm_to_pixiv.py` — VFM→pixiv タグ変換
-
-```bash
-python scripts/vfm_to_pixiv.py novel/ch01.md -o pixiv/ch01.txt
-```
-
-記法対比表は `references/vfm-to-pixiv-workflow.md`。
+| スクリプト | 用途 | 詳細 |
+|---|---|---|
+| `scripts/validate.py` | 設定検証（`--index` / `--log`） | `schema/toml-schema.md` §5 |
+| `scripts/pack.py` | 文脈パック生成（`--chapter` / `--check` / `--budget`） | `schema/toml-schema.md` §6 |
+| `scripts/check_prose.py` | 本文品質（空本文・全角空白・禁止語彙） | `references/writing-workflow.md` |
+| `scripts/init.py` | プロジェクト雛形生成 | `references/planning-workflow.md` §0 |
+| `scripts/pixiv_export.py` | pixiv 投稿用変換（レガシー `NNN-タイトル.md` も受理） | `references/pixiv-export.md` |
+| `scripts/vfm_to_pixiv.py` | 縦読み記法 → pixiv タグ | `references/vfm-to-pixiv-workflow.md` |

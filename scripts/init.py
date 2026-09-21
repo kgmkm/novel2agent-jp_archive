@@ -86,7 +86,7 @@ PRODUCTION_LOG_TEMPLATE = """# 制作ログ（追記専用）
 #
 # 企画・執筆・推敲で「既定の決定を変えた」「案を却下した」ときだけ書く。初回の決定は書かない。
 # 新しいエントリは下に足す。過去のエントリは消さない。撤回も新しいエントリとして書く。
-# スキーマ: schema/toml-schema.md §8。読むとき: validate.py --project-dir <project> --log
+# スキーマ: schema/toml-schema.md §7。読むとき: validate.py --project-dir <project> --log
 #
 # [[log]]
 # id = "log-001"          # log-NNN 連番・重複不可

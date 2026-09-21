@@ -400,7 +400,7 @@ def check_proposal_sync(project: Path, chars, r: Report) -> None:
 # ---------------------------------------------------------------- 制作ログ
 
 def validate_log(project: Path, ref_ids: set[str], plots, r: Report) -> None:
-    """production-log.toml の検証（スキーマ §8）。構造はエラー、参照先は警告のみ。"""
+    """production-log.toml の検証（スキーマ §7）。構造はエラー、参照先は警告のみ。"""
     log_path = project / "production-log.toml"
     if not log_path.is_file():
         return

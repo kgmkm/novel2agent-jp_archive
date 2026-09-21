@@ -54,7 +54,7 @@ def by_prefix(files: dict[Path, dict], prefix: str):
 
 
 def load_log(project: Path) -> list[dict]:
-    """production-log.toml の [[log]] を読む（スキーマ §8）。無ければ空。"""
+    """production-log.toml の [[log]] を読む（スキーマ §7）。無ければ空。"""
     log_path = project / "production-log.toml"
     if not log_path.is_file():
         return []
@@ -242,7 +242,7 @@ def collect_blocks(files: dict[Path, dict], project: Path, chapter: int, plots_b
         blocks.append(Block("## 世界観制約\n" + wc, priority=2))
 
     # --- (3) 未回収伏線: resolve_chapter ≦ N かつ resolved_at なし。
-    # 伏線は「単一点情報源」の核心（§6.5 抽出漏れ禁止）のため budget でも削らない。priority 1 相当で保持
+    # 伏線は「単一点情報源」の核心（§6.6 抽出漏れ禁止）のため budget でも削らない。priority 1 相当で保持
     fs_items: list[str] = []
     for num in sorted(c for c in plots_by_chapter if c < chapter):
         _, pd = plots_by_chapter[num]
@@ -279,7 +279,7 @@ def collect_blocks(files: dict[Path, dict], project: Path, chapter: int, plots_b
         blocks.append(Block("## これまでに確定した出来事（established）\n" + body, priority=4))
 
     # --- (4b) 制作ログ: priority 4.5。affects が対象章 / 登場キャラに関係する全件 + 直近10件
-    # （スキーマ §8。却下済みの案 reject は再提案防止のため優先的に載せる）
+    # （スキーマ §7。却下済みの案 reject は再提案防止のため優先的に載せる）
     log_entries = load_log(project)
     if log_entries:
         target_ids = {f"plot-ch{chapter:02d}"} | set(appearing)

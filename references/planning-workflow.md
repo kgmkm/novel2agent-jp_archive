@@ -1,4 +1,4 @@
-# 企画フェーズ（TOML 版）
+# 企画フェーズ
 
 企画 → 世界観 → キャラ → プロットの順に作る。すべての構造化データは TOML に書き、本文は `novel/` にのみ書く。
 
@@ -101,7 +101,7 @@ note = "山育ちのため知らない"
 
 ## 3. キャラ（character/chara-NNN.toml）
 
-テンプレートは `references/character-template.md`、発想の手順は `references/character-design-guide.md`。必須キーのみスキーマが検証し、追加キーは自由。
+テンプレートは `references/character-template.md`、発想の手順は `references/character-design-guide.md`。必須キーのみスキーマが検証し、追加キーは自由。記入例はテンプレート側。
 
 ### 3-0. 名前を先に決める
 
@@ -111,38 +111,10 @@ note = "山育ちのため知らない"
 - 未決の間は `name_ja = "TBD 桜井"` のように書き、**TBD が残ったままプロット（§4）へ進まない**。validate が警告する
 - 強い却下理由があった名前は `production-log.toml` に `kind = "reject"` で残す（同じ案を再提案しないため）
 
-```toml
-id = "chara-001"
-name_ja = "桜井美咲"
-name_ruby = "さくらい みさき"       # 初出ふりがな検証用
-role = "protagonist"
-
-[basic]
-gender = "female"
-age = 19
-first_person = "私"                 # 一人称検証用
-speech_style = "丁寧語"
-
-[appearance]                        # 画像生成と執筆の両方の安定性を左右する
-hair = "黒髪ロングストレート"
-outfit = "白と金の聖女服"
-
-[[relations]]
-target = "chara-002"                # 存在チェック対象。# コメントで人間向け名前を併記可
-kind = "学友"
-emotion = "信頼"
-
-[[versions]]                        # 章またぎ変化はここに一元化（旧: バージョン別 .md ファイル）
-from_chapter = 3
-age = 20
-note = "覚醒後。制服が黒い戦闘服に"
-```
-
 規則：
 
-- 章またぎの大きな変化（悪堕ち・所属変更）は `[[versions]]` に変更キーのみ書く。全項目の再記述はしない
+- 1 キャラ 1 ファイル。章またぎの変化（悪堕ち・所属変更）は `[[versions]]` に変更キーのみ書く。全項目の再記述はしない
 - `[basic]` 配下のキー（age 等）を versions に書くと pack.py が `[basic]` に反映する（schema §1）
-- 1 キャラ 1 ファイル。章またぎの変化は `[[versions]]` に書く
 
 ## 4. プロット（plot/plot-chNN.toml）
 
@@ -197,9 +169,7 @@ status = "draft"                    # draft / written / revised / confirmed
 
 ## 6. AGENTS.md（作品の憲法）
 
-文体規則・禁止事項・シリーズ注意点を 1 本にまとめる。キャラ初出時はふりがなを添える等の規則はここに。
-
-> エージェント非依存の注意：Claude Code は `AGENTS.md` を読まない。`CLAUDE.md` に「AGENTS.md を読め」の 1 行のみ置く運用（goose は `.goosehints` 同様）。
+文体規則・禁止事項・シリーズ注意点を 1 本にまとめる。キャラ初出時はふりがなを添える等の規則はここに。エージェント別の読込方法は `references/hermes-setup.md`。
 
 ## 7. 最終確認
 
