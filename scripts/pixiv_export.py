@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-pixiv_export.py — novel2hermes_jp pixiv小説エクスポート
+pixiv_export.py — novel2agent-jp pixiv小説エクスポート
 
 novel/ 配下の.mdファイルを pixiv小説投稿用の単一ファイルに統合する。
 本文は改変しない（pure conversion）。記法のみ pixiv 形式に統一する。
@@ -37,7 +37,7 @@ IMAGE_PLACEHOLDER_TMP = "\x00IMG{}\x00"
 # 章読込
 # ---------------------------------------------------------------------------
 
-# 新構造: novel/chNN.md（novel2agent-jp 標準）。旧形式 NNN-タイトル.md も後方互換で受理
+# 章ファイル: novel/chNN.md（標準）。レガシー形式 NNN-タイトル.md も受理
 CHAPTER_FILE_RE = re.compile(r"^(?:ch(\d{2,})|(\d+)-(.+))\.md$")
 H1_H2_RE = re.compile(r"^#+\s+.+$", re.MULTILINE)
 
@@ -365,13 +365,13 @@ def check_length(export_path: Path) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="novel2hermes_jp pixiv小説エクスポート",
+        description="novel2agent-jp pixiv小説エクスポート",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
     parser.add_argument(
         "--project-dir", type=Path,
-        help="novel2hermes_jp プロジェクトのルートディレクトリ",
+        help="novel2agent-jp プロジェクトのルートディレクトリ",
     )
     parser.add_argument(
         "--input-dir", type=Path,

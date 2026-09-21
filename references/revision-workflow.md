@@ -109,7 +109,7 @@ fs-002: 「203号室へは戻るな」 → 張り: 2章 / resolve_chapter: 3章 
 
 ### B-3. 世界制約チェック
 
-worldbuilding の `[[constraints]]` と本文を照合する。かつて vecmemori で行っていた照合は、パックの「世界観制約」セクション + validate.py 警告で代替する。
+worldbuilding の `[[constraints]]` と本文を照合する。照合元はパックの「世界観制約」セクション + validate.py 警告。
 
 **検出パターン：**
 - 時代設定がある作品で現代語を使う（「ばいばい」「スマホ」）

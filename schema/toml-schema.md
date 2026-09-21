@@ -236,12 +236,6 @@ pack.py は新構成における唯一の情報源（単一点）のため、以
 
 ---
 
-## 7. serialize 規則（廃止）
-
-vecmemori への fact 化は行わないため serialize 規則は存在しない。LLM に渡す表現は pack.py の Markdown レンダリングに一元化される。
-
----
-
 ## 8. production-log（production-log.toml）
 
 制作上の判断を記録する。作中の事実ではない（作中の事実は `[[established]]`、属性変化は `[[versions]]`）。追記専用で、過去のエントリは消さない。撤回も新しいエントリとして書く。初回の決定は書かない（proposal.md と TOML 自体が記録になる。変えた時、却下した時に書く）。

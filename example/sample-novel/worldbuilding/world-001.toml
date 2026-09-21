@@ -1,9 +1,0 @@
-id = "world-001"
-title = "基本設定"
-kind = "core"
-content = '''魔法が存在する現代日本。'''
-
-[[constraints]]
-kind = "forbidden_words"
-words = ["異世界", "転生"]
-note = "現代日本が舞台のため"

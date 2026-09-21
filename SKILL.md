@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.3.1
+version: 0.3.3
 ---
 
 # novel2agent-jp
@@ -45,6 +45,9 @@ scripts/validate.py → scripts/pack.py --check → 必要なら pack.py 再生�
 | `references/character-design-guide.md` | キャラの発想手順（欠点先行・三層・配置。テンプレを埋める前に） |
 | `references/sensory-rotation.md` | 五感ローテーション（シーンごと視覚以外 2 つ以上） |
 | `references/metaphor-guide.md` | 比喩の選び方（クリシェ回避・1〜2 個/シーン） |
+| `references/pixiv-export.md` | pixiv投稿用変換の手順（エクスポート時に読む） |
+| `references/illustration-guide.md` | 挿絵生成ワークフロー（挿絵を作るときに読む） |
+| `references/vfm-to-pixiv-workflow.md` | 縦読み記法→pixiv変換の記法対比（VFMを使うときに読む） |
 | `references/hermes-setup.md` | Hermes 固有の環境セットアップ（他エージェントでは不要） |
 
 ## 本文保存の鉄則（事故対策）
@@ -95,7 +98,7 @@ python scripts/init.py --project-dir <path>
 
 ### `scripts/pixiv_export.py` — pixiv 投稿用変換
 
-`novel/chNN.md`（旧 `NNN-タイトル.md` も受理）を pixiv 小説投稿用単一ファイルへ統合。
+`novel/chNN.md`（旧 `NNN-タイトル.md` も受理）を pixiv 小説投稿用単一ファイルへ統合。手順の詳細は `references/pixiv-export.md`。
 
 ```bash
 python scripts/pixiv_export.py --project-dir <project>            # export/pixiv.md に統合

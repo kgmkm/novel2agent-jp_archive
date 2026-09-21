@@ -39,17 +39,6 @@ env -u PYTHONHOME PYTHONPATH= \
 - 会話圧縮: Hermes は `/compress`。エージェント別対応表は `references/revision-workflow.md` 冒頭を参照
 - 過去セッション検索（`session_search`）は**本スキルのワークフローでは不要**。プロジェクトの状態は TOML ＋ `.context` がすべて保持するため、セッションを跨いでも pack 再生成だけで復元できる
 
-## 廃止された依存（旧 novel2hermes からの移行）
-
-| 旧 | 現 |
-|----|----|
-| vecmemori-plus / fact_store | 廃止。TOML 一元化（schema/toml-schema.md） |
-| session_search によるプロジェクト復元 | pack.py 再生成で代替 |
-| memory(action="add") への核心設定保存 | meta.toml / proposal.md に集約 |
-| `/compress` の必須実行 | 趣旨のみ残し提案ベースに（コマンド名はエージェント別） |
-| hermes-fake-moa（並列 MoA 実行） | 存在すれば使う。無い環境では任意の方法で別モデルに投げる（手順: `references/moa-manual-orchestration.md`） |
-| 1バージョン1キャラ.md | `[[versions]]` に一本化 |
-
 ## 他エージェントでの使用
 
 - 生成物（`.context/`）が Markdown のため、どのエージェントでも同じ原稿を扱える

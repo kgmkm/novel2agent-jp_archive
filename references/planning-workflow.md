@@ -142,7 +142,7 @@ note = "覚醒後。制服が黒い戦闘服に"
 
 - 章またぎの大きな変化（悪堕ち・所属変更）は `[[versions]]` に変更キーのみ書く。全項目の再記述はしない
 - `[basic]` 配下のキー（age 等）を versions に書くと pack.py が `[basic]` に反映する（schema §1）
-- 旧版の「1バージョン1ファイル（`01-01-セシリア_堕落前.md`）」方式は廃止。1 キャラ 1 ファイル
+- 1 キャラ 1 ファイル。章またぎの変化は `[[versions]]` に書く
 
 ## 4. プロット（plot/plot-chNN.toml）
 
@@ -208,4 +208,4 @@ status = "draft"                    # draft / written / revised / confirmed
 3. ユーザに全ファイル一覧と `--index` 出力を提示し、修正指示を待つ
 4. 企画段階で proposal.md の内容を変えた、または案を却下した場合、`production-log.toml` に記録したか
 
-vecmemori / ビルトインメモリへの保存は行わない（廃止）。すべて TOML に残る。
+設定はすべて TOML に残る。
