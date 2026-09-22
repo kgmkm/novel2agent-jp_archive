@@ -99,6 +99,8 @@ words = ["化学用語", "英語"]
 note = "山育ちのため知らない"
 ```
 
+世界観ができたらユーザに全文提示し、承認を得てからキャラ（§3）へ。承認なしにキャラファイルを作らない。
+
 ## 3. キャラ（character/chara-NNN[-サフィックス].toml）
 
 テンプレートは `references/character-template.md`、発想の手順は `references/character-design-guide.md`。必須キーのみスキーマが検証し、追加キーは自由。記入例はテンプレート側。ファイル名の末尾に名前を付けるとエクスプローラで見分けやすい（例：`chara-001-瀬川匠.toml`。書式は `schema/toml-schema.md` §0）。
@@ -115,6 +117,8 @@ note = "山育ちのため知らない"
 
 - 1 キャラ 1 ファイル。章またぎの変化（悪堕ち・所属変更）は `[[versions]]` に変更キーのみ書く。全項目の再記述はしない
 - `[basic]` 配下のキー（age 等）を versions に書くと pack.py が `[basic]` に反映する（schema §1）
+
+全キャラができたらユーザに一覧提示（`validate.py --index` の出力）し、承認を得てからプロット（§4）へ。承認なしに plot ファイルを作らない。
 
 ## 4. プロット（plot/plot-chNN[-サフィックス].toml）
 
@@ -177,11 +181,12 @@ status = "draft"                    # draft / written / revised / confirmed
 
 文体規則・禁止事項・シリーズ注意点を 1 本にまとめる。キャラ初出時はふりがなを添える等の規則はここに。エージェント別の読込方法は `references/hermes-setup.md`。
 
-## 7. 最終確認
+## 7. 最終確認（企画承認ゲート）
 
 1. `python scripts/validate.py --project-dir <project>` → エラー 0
 2. `python scripts/validate.py --project-dir <project> --index` → ID↔名称の一覧が意図通り
-3. ユーザに全ファイル一覧と `--index` 出力を提示し、修正指示を待つ
-4. 企画段階で proposal.md の内容を変えた、または案を却下した場合、`production-log.toml` に記録したか
+3. ユーザに全ファイル一覧と `--index` 出力を提示し、**明示的な承認を得る**。承認があるまで `novel/chNN.md` を作らない（執筆フェーズに入らない）
+4. 承認を得たら `meta.toml` の `plan_status` をユーザが `confirmed` に変更する（エージェントが自分で変えない）。`status` が writing 以降で未 confirmed は validate エラー（schema §5-18）
+5. 企画段階で proposal.md の内容を変えた、または案を却下した場合、`production-log.toml` に記録したか
 
 設定はすべて TOML に残る。

@@ -376,6 +376,13 @@ def validate_meta(project: Path, files: dict[Path, dict], r: Report) -> dict | N
         check_keys(work, {"title": str, "genre": str, "status": str}, meta_path, "[work]", r)
         if work.get("status") not in VALID_WORK_STATUS:
             r.error(meta_path, f"work.status 不正 '{work.get('status')}'")
+        # 企画承認ゲート（planning §7）：執筆フェーズ以降は plan_status = confirmed 必須。
+        # planning 中の未記入は許容（旧プロジェクト移行のため。執筆時に必ずエラーになる）
+        plan = work.get("plan_status")
+        if work.get("status") in ("writing", "revision", "complete") and plan != "confirmed":
+            r.error(meta_path, "企画未承認で執筆フェーズに入っている：[work] plan_status をユーザが confirmed に変更すること（planning §7）")
+        elif plan is not None and plan not in ("draft", "confirmed"):
+            r.error(meta_path, f"work.plan_status 不正 '{plan}'（draft / confirmed）")
     chapters = data.get("chapters")
     if not isinstance(chapters, list) or not chapters:
         # 雛形（init.py 直後・plot 未作成）では chapters 未記入を許す（work.status = planning の場合のみ）

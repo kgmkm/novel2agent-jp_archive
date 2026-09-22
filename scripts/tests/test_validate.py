@@ -9,6 +9,7 @@ fixtures:
 import shutil
 import subprocess
 import sys
+import re
 from pathlib import Path
 
 import pytest
@@ -324,3 +325,50 @@ def test_support_with_one_deep_key_ok(ok_project):
     code, out = run(ok_project)
     assert code == 0, out
     assert "物語装置キー" not in out
+
+
+def _set_plan(ok_project, work_status, plan_line):
+    # plan_status 行の差し替え・削除ヘルパ（§5-18 企画承認ゲート用）
+    meta = ok_project / "meta.toml"
+    text = meta.read_text(encoding="utf-8")
+    text = re.sub(r'^status = "writing"$', f'status = "{work_status}"', text, count=1, flags=re.M)
+    text = re.sub(r'^plan_status = "confirmed"\n', "", text, count=1, flags=re.M)
+    if plan_line is not None:
+        text = text.replace("[work]\n", "[work]\n" + plan_line + "\n", 1)
+    meta.write_text(text, encoding="utf-8")
+
+
+def test_plan_gate_writing_without_confirmed_exit_1(ok_project):
+    # writing で plan_status 未記入 → エラー（企画未承認の執筆を機械的に止める）
+    _set_plan(ok_project, "writing", None)
+    code, out = run(ok_project)
+    assert code == 1, out
+    assert "企画未承認" in out
+
+
+def test_plan_gate_writing_draft_exit_1(ok_project):
+    _set_plan(ok_project, "writing", 'plan_status = "draft"')
+    code, out = run(ok_project)
+    assert code == 1, out
+    assert "企画未承認" in out
+
+
+def test_plan_gate_writing_confirmed_passes(ok_project):
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "企画未承認" not in out
+
+
+def test_plan_gate_planning_without_plan_key_passes(ok_project):
+    # planning 中の未記入は許容（旧プロジェクト移行のため）
+    _set_plan(ok_project, "planning", None)
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "企画未承認" not in out
+
+
+def test_plan_gate_invalid_value_exit_1(ok_project):
+    _set_plan(ok_project, "planning", 'plan_status = "ok"')
+    code, out = run(ok_project)
+    assert code == 1, out
+    assert "plan_status 不正" in out

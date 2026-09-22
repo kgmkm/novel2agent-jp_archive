@@ -165,6 +165,7 @@ characters = ["chara-001"]          # 関連キャラ（任意）
 title = "作品タイトル"
 genre = "現代ファンタジー"
 status = "writing"                  # planning / writing / revision / complete
+plan_status = "confirmed"           # draft / confirmed。企画承認は必ずユーザが行う（planning §7）。writing 以降で未 confirmed は validate エラー
 
 [[chapters]]                        # 必須・章の唯一の目次。記述順が章順
 number = 1                          # 必須
@@ -176,6 +177,7 @@ status = "draft"                    # draft / written / revised / confirmed
 **規則**：
 - 章順はファイル名ではなく本ファイルの `[[chapters]]` 記述順で決まる
 - pack.py / validate.py はこの目次を起点に探索する
+- `plan_status` は企画承認の機械ゲート。`draft`（init 既定）→ ユーザ承認で `confirmed`。`status` が writing / revision / complete の間に `confirmed` でなければ validate エラー。planning 中の未記入は許容（旧プロジェクト移行のため）
 
 ---
 
@@ -200,6 +202,7 @@ status = "draft"                    # draft / written / revised / confirmed
 | 15 | character role の列挙値（protagonist / antagonist / support） | エラー |
 | 16 | plot 長文（summary / scenes.content / foreshadowing.content / established.content）の1行超過（§0 可読性ルール・全角40字目安） | 警告 |
 | 17 | screen_time=minor の物語装置キー（flaw / quirk / heat / false_belief）所持、support の2件以上所持（§1 適用範囲） | 警告 |
+| 18 | work.status が writing / revision / complete なのに plan_status が confirmed でない（企画未承認の執筆。planning §7） | エラー |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
 `validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§7）。

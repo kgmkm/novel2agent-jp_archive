@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.4.2
+version: 0.4.3
 ---
 
 # novel2agent-jp
@@ -22,6 +22,7 @@ TOML（設定・プロット・キャラ・世界観）
 ```
 
 - 設定はすべて TOML。本文は `novel/chNN.md` にのみ書く
+- フェーズ境界は停止する：proposal 承認（`proposal_status`）→ 世界観・キャラ・プロット各承認 → 企画承認（`plan_status`）→ 章ごと確認が既定。承認なしに次へ進まない。詳細は planning §7・writing 執筆実行 8
 - 属性変更はキャラ TOML の `[[versions]]`、出来事は章 TOML の `[[established]]` に一元化
 - LLM の未確定事実は `status = "proposed"` で追記し、人間が `"confirmed"` に変える
 - 伏線の回収実績は `[[foreshadowing]]` の `resolved_at` に一本化

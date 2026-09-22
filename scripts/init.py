@@ -18,6 +18,7 @@ META_TEMPLATE = """[work]
 title = "（作品タイトル）"
 genre = "（ジャンル）"
 status = "planning"                  # planning / writing / revision / complete
+plan_status = "draft"                # draft / confirmed。企画承認は必ずユーザが行い confirmed へ（planning §7）
 
 # chapters は plot TOML 作成後に追記する（validate.py が chapters[?].plot 必須を検査）。
 # 例:

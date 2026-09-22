@@ -173,6 +173,10 @@ my-novel-project/
 
 ## 更新履歴
 
+### v0.4.3
+- フェーズ境界の承認ゲートを新設。世界観→キャラ→プロットの各承認文（planning §2末・§3末・§7 積極承認化）＋ `meta.toml plan_status` の機械ゲート（writing 以降で未 confirmed は validate エラー §5-18）＋執筆は次章前のユーザ確認を既定に（省略は一括指示のみ。writing 執筆実行 8）
+- `init.py` の雛形に `plan_status = "draft"` を追加
+
 ### v0.4.2
 - 物語装置キー（flaw / quirk / heat / false_belief）の適用範囲を規定（`schema/toml-schema.md` §1）。lead 必須・support 1件まで任意・minor 禁止。違反は validate が警告（§5-17）
 - pack は物語装置キーを章視点キャラと各キャラの初出章にだけ出す（他章は出さない。弱い LLM の儀式化防止）。演技情報（fears / catchphrase / habits 等）は毎章据え置き

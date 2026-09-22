@@ -2,6 +2,7 @@
 title = "テスト作品"
 genre = "現代ファンタジー"
 status = "writing"
+plan_status = "confirmed"
 
 [[chapters]]
 number = 1

@@ -13,6 +13,7 @@ def build(root: Path) -> Path:
 title = "サンプル作品"
 genre = "現代ファンタジー"
 status = "writing"
+plan_status = "confirmed"
 
 [[chapters]]
 number = 1
