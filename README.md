@@ -175,6 +175,9 @@ my-novel-project/
 
 ## 更新履歴
 
+### v0.4.6
+- 短文結合を追加。全角10字以内（表示幅20）の文は単独行にせず前後の文と同行に畳む（長文＋長文は結合しない。1文1行・git diff 粒度を保つ）。`format_toml.py` の `group_sentences` が自動処理。結合しても80字相当以内
+
 ### v0.4.5
 - TOML リテラルの機械整形を新設。改行位置の判断を AI にさせず `scripts/format_toml.py` で直す方式に（複数行 `'''` は開き直後・閉じ直前に改行、1文1行・全角40字目安で折り返し。1行リテラルは触らない）。`validate.py` は形式違反を警告（§5-19）。TOML 修正後は `format_toml.py` → `validate.py` の順に回す（`references/toml-formatting.md` が正本、エージェント別対応表つき）
 - mcode（MiniMax Code）の hooks 機構は公式ドキュメントに記載を確認できず。AGENTS.md への追記＋手動コマンド運用とした（確認できたら対応表を更新する）

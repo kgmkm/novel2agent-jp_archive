@@ -7,10 +7,10 @@ AI に「50文字くらいで改行して」と頼む運用は、修正指示の
 対象: プロジェクト配下の全 TOML 内の複数行 ''' リテラル（キー不問）。
   1行リテラル（改行なし）は正規形のまま触らない。
 やること:
-  1. 先頭改行の強制: ``'''内容'''`` → ``'''\\n内容\\n'''``
+  1. 先頭改行の強制: ``'''内容'''`` → ``'''\n内容\n'''``
      (TOML 仕様で開き直後の1改行は無視されるため、値の先頭は変わらない。
       末尾改行は値に ``\\n`` が1つ付く。schema の plot 例と同形になる)
-  2. 1文1行: 。！？…＋閉じ括弧の後ろで割る
+  2. 1文1行: 。！？…＋閉じ括弧の後ろで割る。ただし全角10字以内の短文は孤立行にせず前後の文と同行に畳む
   3. 幅詰め: 半角換算80字相当（全角40字目安）超の行を、読点・開き括弧前で折る。
      行頭禁則（」、。、？！…）・行末禁則（「『（［）を避ける
 
@@ -36,6 +36,8 @@ from pathlib import Path
 # schema §0 と同じ閾値（validate.py の READABILITY_WIDTH と一致させる）
 WIDTH = 80
 MIN_BEFORE_BREAK = 40  # 折り返し前の断片がこれ未満なら無理に折らない
+# 短文結合の閾値：表示幅20（全角10字）以下の文は単独行にせず前後の文と同行に畳む
+SHORT_MERGE_WIDTH = 20
 
 SENTENCE_RE = re.compile(r".+?(?:[。！？]+[」』）〉》】]*|[…―—]+[」』）〉》】]*|$)")
 LITERAL_RE = re.compile(r"'''(.*?)'''", re.DOTALL)
@@ -114,14 +116,41 @@ def wrap_sentence(s: str, width: int = WIDTH) -> list[str]:
     return out
 
 
-def reflow_content(inner: str) -> str:
-    """リテラル中身を行単位→文単位→幅詰めで流し直す。"""
+def group_sentences(sentences: list[str], width: int = WIDTH) -> list[str]:
+    """文を1文1行にしつつ、短文（全角10字以下）は孤立行にせず前後の文と同行に畳む。
+
+    結合するのは「次が短文」か「行が短文1件のみ（短い先頭＋次の文）」の場合だけ。
+    長文＋長文は結合しない（1文1行・git diff 粒度を保つ）。結合後も width 以内。
+    """
     lines: list[str] = []
+    buf: list[str] = []
+    buf_w = 0
+    for sent in sentences:
+        sw = display_width(sent)
+        short_next = sw <= SHORT_MERGE_WIDTH
+        short_head = len(buf) == 1 and display_width(buf[0]) <= SHORT_MERGE_WIDTH
+        if buf and buf_w + sw <= width and (short_next or short_head):
+            buf.append(sent)
+            buf_w += sw
+        else:
+            if buf:
+                lines.append("".join(buf))
+            buf, buf_w = [sent], sw
+    if buf:
+        lines.append("".join(buf))
+    return lines
+
+
+def reflow_content(inner: str) -> str:
+    """リテラル中身を行単位→文単位→短文結合→幅詰めで流し直す。"""
+    sents: list[str] = []
     for raw in inner.strip().replace("\r\n", "\n").split("\n"):
         if not raw.strip():
             continue
-        for sent in split_sentences(raw):
-            lines.extend(wrap_sentence(sent))
+        sents.extend(split_sentences(raw))
+    lines: list[str] = []
+    for line in group_sentences(sents):
+        lines.extend(wrap_sentence(line))
     return "\n".join(lines)
 
 

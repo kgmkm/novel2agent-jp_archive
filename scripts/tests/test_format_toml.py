@@ -99,3 +99,40 @@ def test_validate_warns_on_missing_newline():
     )
     out = proc.stdout + proc.stderr
     assert "先頭・末尾に改行がない" in out, out
+
+
+def test_short_sentences_merge():
+    # 全角10字以内の短文は孤立行にならず前後の文と同行に畳まれる
+    p = make_project(WORK / "case6", {
+        "plot/plot-ch01.toml": (
+            "id = \"plot-ch01\"\ncontent = '''\n"
+            "匠はまだ何も気づいていない。\n"
+            "落差をつける。\n"
+            "本筋の種。\n"
+            "'''\n"
+        ),
+    })
+    code, out = run(p)
+    assert code == 0, out
+    v = tomllib.loads((p / "plot" / "plot-ch01.toml").read_text(encoding="utf-8"))["content"]
+    assert v == "匠はまだ何も気づいていない。落差をつける。本筋の種。\n", repr(v)
+    # 冪等
+    code, out = run(p)
+    assert "変更なし" in out, out
+
+
+def test_long_sentences_stay_split():
+    # 長文＋長文は結合しない（1文1行を保つ）
+    p = make_project(WORK / "case7", {
+        "plot/plot-ch01.toml": (
+            "id = \"plot-ch01\"\ncontent = '''\n"
+            "軟化したロクサーヌの顔を見て、ノエミアが自分にもと要求する。\n"
+            "動機は酒場で見た錬成への興味だった。\n"
+            "'''\n"
+        ),
+    })
+    code, out = run(p)
+    assert code == 0, out
+    v = tomllib.loads((p / "plot" / "plot-ch01.toml").read_text(encoding="utf-8"))["content"]
+    assert v == ("軟化したロクサーヌの顔を見て、ノエミアが自分にもと要求する。\n"
+                 "動機は酒場で見た錬成への興味だった。\n"), repr(v)
