@@ -48,7 +48,7 @@ strengths = "思いやりがある"
 weaknesses = "やや内向的。頼ることが苦手"
 
 [motivation]                        # 行動原理（任意だが物語の核になるので埋めること）
-core_wound = '''幼少期に母親を病気で亡くした。'''
+core_wound = '''幼少期に母親を病気で亡くした。'''  # 2文以上になったら複数行にし、開き直後・閉じ直前に改行（toml-formatting.md）
 false_belief = "努力すれば必ず報われる"   # lead必須・support任意・minor禁止。本人は正しいと信じているが物語中で崩される考え（一行）
 principle = "他人を守りたい"          # 意思決定の最優先基準
 goal_external = "魔法公安の捜査官になる"

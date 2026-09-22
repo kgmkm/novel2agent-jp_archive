@@ -110,6 +110,7 @@ novel2agent-jp/
 │   └── toml-schema.md           ← TOML スキーマ定義（必須キー・検証項目・pack.py 仕様）
 ├── scripts/
 │   ├── validate.py              ← 設定検証（構文・必須キー・ID・参照整合・制作ログ）
+│   ├── format_toml.py           ← TOML リテラル整形（改行位置の機械修正）
 │   ├── pack.py                  ← 文脈パック生成（章ごとの LLM 渡し用 Markdown）
 │   ├── check_prose.py           ← 本文品質検査（空本文・禁止語彙・全角空白）
 │   ├── init.py                  ← プロジェクト雛形生成
@@ -123,6 +124,7 @@ novel2agent-jp/
 │   ├── revision-workflow.md     ← 推敲フェーズ（Phase A/B/C + MoA 4 視点）
 │   ├── moa-manual-orchestration.md ← 4 視点 MoA の実行手順（エージェント非依存）
 │   ├── character-template.md    ← キャラ TOML テンプレート（40 項目超）
+│   ├── toml-formatting.md       ← TOML リテラルの機械整形（修正後に読む）
 │   ├── character-design-guide.md ← キャラ発想ガイド（欠点先行・名前先決め）
 │   ├── metaphor-guide.md        ← 比喩ガイド（クリシェ回避）
 │   ├── sensory-rotation.md      ← 五感ローテーションガイド
@@ -172,6 +174,10 @@ my-novel-project/
 - **設定ファイルは人間が読んで直せる形式になりました** — 執筆に必要な設定はエージェントが自動でそろえます
 
 ## 更新履歴
+
+### v0.4.5
+- TOML リテラルの機械整形を新設。改行位置の判断を AI にさせず `scripts/format_toml.py` で直す方式に（複数行 `'''` は開き直後・閉じ直前に改行、1文1行・全角40字目安で折り返し。1行リテラルは触らない）。`validate.py` は形式違反を警告（§5-19）。TOML 修正後は `format_toml.py` → `validate.py` の順に回す（`references/toml-formatting.md` が正本、エージェント別対応表つき）
+- mcode（MiniMax Code）の hooks 機構は公式ドキュメントに記載を確認できず。AGENTS.md への追記＋手動コマンド運用とした（確認できたら対応表を更新する）
 
 ### v0.4.4
 - プロット完成→執筆の間に構造診断の固定工程を新設。revision Phase A-5 全巻構造チェック（6問）・A-6 巻き戻し手順、MoA プロット診断（§6）、planning §7 承認条件に追加。コード変更なし

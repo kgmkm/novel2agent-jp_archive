@@ -41,6 +41,29 @@ READABILITY_WIDTH = 80
 # §0 ファイル名サフィックスで使用禁止の文字（Windows/macOS 共通で作れない・壊れるもの）
 FORBIDDEN_FILENAME_CHARS = set('\\/:*?"<>|')
 
+LITERAL_RE = re.compile(r"'''(.*?)'''", re.DOTALL)
+
+
+def check_literal_style(path, r: Report) -> None:
+    """''' リテラルの先頭・末尾改行を警告する（スキーマ §5-19。エラーにしない）。
+
+    tomllib は整形済み値しか見ないため原文テキストで検査する。
+    直し方は format_toml.py（references/toml-formatting.md）。
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception:
+        return
+    for m in LITERAL_RE.finditer(text):
+        if not m.group(1).strip():
+            continue
+        if "\n" not in m.group(1):
+            continue  # 1行リテラルは正規形（短い事実はそのまま書く）
+        if not m.group(1).startswith("\n") or not m.group(1).endswith("\n"):
+            r.warn(path, "''' リテラルの先頭・末尾に改行がない"
+                         " → scripts/format_toml.py --project-dir <project> で直すこと（schema §0-3）")
+            return
+
 
 def display_width(text: str) -> int:
     """半角換算の表示幅。全角（W/F）は2、それ以外は1で数える。"""
@@ -601,6 +624,11 @@ def main() -> int:
     validate_meta(project, files, r)
     check_proposal_sync(project, chars, r)
     validate_log(project, ref_ids, plots, r)
+    for path in files:
+        check_literal_style(path, r)
+    log_path = project / "production-log.toml"
+    if log_path.is_file():
+        check_literal_style(log_path, r)
 
     print()
     print(f"== 検証結果 ({len(files)} TOML ファイル) ==")

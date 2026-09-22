@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.4.4
+version: 0.4.5
 ---
 
 # novel2agent-jp
@@ -41,6 +41,7 @@ TOML（設定・プロット・キャラ・世界観）
 | `references/revision-workflow.md` | 推敲フェーズ（Phase A/B/C + MoA 4 視点 + proposed 確定手順） |
 | `references/moa-manual-orchestration.md` | 4 視点の横並び比較推敲（MoA）の実行手順。エージェント非依存（推敲で複数モデルを使うとき） |
 | `references/character-template.md` | キャラ TOML の全項目テンプレートと記入例 |
+| `references/toml-formatting.md` | TOML リテラルの機械整形（改行位置を AI に判断させない。TOML 修正後に読む） |
 | `references/character-design-guide.md` | キャラの発想手順（欠点先行・三層・配置。テンプレを埋める前に） |
 | `references/sensory-rotation.md` | 五感ローテーション（シーンごと視覚以外 2 つ以上） |
 | `references/metaphor-guide.md` | 比喩の選び方（クリシェ回避・1〜2 個/シーン） |
@@ -61,6 +62,7 @@ CLI の詳細は各参照先。ここは用途の索引。
 | スクリプト | 用途 | 詳細 |
 |---|---|---|
 | `scripts/validate.py` | 設定検証（`--index` / `--log`） | `schema/toml-schema.md` §5 |
+| `scripts/format_toml.py` | TOML リテラル整形（`--check` あり） | `references/toml-formatting.md` |
 | `scripts/pack.py` | 文脈パック生成（`--chapter` / `--check` / `--budget`） | `schema/toml-schema.md` §6 |
 | `scripts/check_prose.py` | 本文品質（空本文・全角空白・禁止語彙） | `references/writing-workflow.md` |
 | `scripts/init.py` | プロジェクト雛形生成 | `references/planning-workflow.md` §0 |

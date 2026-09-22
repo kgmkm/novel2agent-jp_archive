@@ -77,6 +77,7 @@ resolve_chapter = 5
 
 ```bash
 python scripts/check_prose.py --project-dir <project>   # 本文品質（空本文・禁止語彙・全角空白）
+python scripts/format_toml.py --project-dir <project>   # リテラル整形（改行位置の機械修正。toml-formatting.md）
 python scripts/validate.py --project-dir <project>
 python scripts/pack.py --project-dir <project> --chapter <次の章> 
 ```

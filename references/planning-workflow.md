@@ -37,6 +37,7 @@ python scripts/validate.py --project-dir <project>
 ```
 
 構造エラーはこの段階で潰す。以後、ファイルを増やすたびに随時回す。
+TOML を書いた・直した後は `format_toml.py` → `validate.py` の順（形式は `references/toml-formatting.md`）。
 
 ## 1. proposal.md（Markdown のまま）
 
@@ -159,6 +160,7 @@ status = "proposed"                 # 推敲完了時に人間が confirmed へ
 
 ルートキーは `id / summary / summary_status / chapter / title / pov / peak_intensity` の順に書く（キー順は機械の動作に影響しない。編集頻度順）。
 `summary` / `content` の長文は `schema/toml-schema.md` §0 の可読性ルール（`'''` 複数行・1文1行・1行は全角40字目安、行数は無制限）で書く。LLM に summary を記入させる場合も同じ形で指示する。
+改行位置の判断は LLM にさせない。書いた後は `references/toml-formatting.md` の手順（`format_toml.py` → `validate.py`）で機械的に直す。
 
 ## 5. meta.toml（章の唯一の目次）
 

@@ -20,6 +20,7 @@
   2. **1行は全角40字（半角80字相当）目安**：文末なしで超える場合は読点・接続詞の前・開き括弧の前で折る。行頭に `」』）、。、？！…` を置かず、行末に `「『（［` を置かない
   - 空の `summary` だけは `summary = ""` のまま許す（未執筆のマーカー）。中身を書くときは `'''` にする
   - validate は1行超過を**警告**する（エラーにしない。§5-16）
+- **リテラル形式（機械整形の対象）**：複数行の `'''` リテラルはキー不問で「開き直後・閉じ直前に改行」を付ける（1行リテラルは触らない）。AI に改行位置を判断させず `scripts/format_toml.py` で直す。詳細は `references/toml-formatting.md`（正本）
 
 ---
 
@@ -203,6 +204,7 @@ status = "draft"                    # draft / written / revised / confirmed
 | 16 | plot 長文（summary / scenes.content / foreshadowing.content / established.content）の1行超過（§0 可読性ルール・全角40字目安） | 警告 |
 | 17 | screen_time=minor の物語装置キー（flaw / quirk / heat / false_belief）所持、support の2件以上所持（§1 適用範囲） | 警告 |
 | 18 | work.status が writing / revision / complete なのに plan_status が confirmed でない（企画未承認の執筆。planning §7） | エラー |
+| 19 | 複数行 `'''` リテラルの先頭・末尾に改行がない（§0 リテラル形式） | 警告 |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
 `validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§7）。
