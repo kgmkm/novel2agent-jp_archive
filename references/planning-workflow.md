@@ -188,5 +188,6 @@ status = "draft"                    # draft / written / revised / confirmed
 3. ユーザに全ファイル一覧と `--index` 出力を提示し、**明示的な承認を得る**。承認があるまで `novel/chNN.md` を作らない（執筆フェーズに入らない）
 4. 承認を得たら `meta.toml` の `plan_status` をユーザが `confirmed` に変更する（エージェントが自分で変えない）。`status` が writing 以降で未 confirmed は validate エラー（schema §5-18）
 5. 企画段階で proposal.md の内容を変えた、または案を却下した場合、`production-log.toml` に記録したか
+6. 構造診断を回したか（revision Phase A-4・A-5、C-1、MoA プロット診断）。未実施のまま承認しない。章を全部書いてから気づく事故を防ぐ
 
 設定はすべて TOML に残る。

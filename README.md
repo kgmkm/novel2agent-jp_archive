@@ -173,6 +173,9 @@ my-novel-project/
 
 ## 更新履歴
 
+### v0.4.4
+- プロット完成→執筆の間に構造診断の固定工程を新設。revision Phase A-5 全巻構造チェック（6問）・A-6 巻き戻し手順、MoA プロット診断（§6）、planning §7 承認条件に追加。コード変更なし
+
 ### v0.4.3
 - フェーズ境界の承認ゲートを新設。世界観→キャラ→プロットの各承認文（planning §2末・§3末・§7 積極承認化）＋ `meta.toml plan_status` の機械ゲート（writing 以降で未 confirmed は validate エラー §5-18）＋執筆は次章前のユーザ確認を既定に（省略は一括指示のみ。writing 執筆実行 8）
 - `init.py` の雛形に `plan_status = "draft"` を追加
