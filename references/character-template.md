@@ -17,9 +17,9 @@ id = "chara-001"                    # 必須・ファイル名先頭と一致（
 name_ja = "桜井美咲"                # 必須。固まる前は候補を先に出す（発想ガイド参照）
 name_ruby = "さくらい みさき"        # 必須（初出ふりがな検証用）
 role = "protagonist"                # 必須。protagonist / antagonist / support のいずれか
-flaw = "頼ることが苦手で一人で抱え込む"  # 推奨・作中で一度は判断を誤らせる欠点
-quirk = "学者なのに部屋に漫画が二冊だけある"  # 推奨・属性から連想されないズレ一つ
-heat = "母の死に意味を見出したい"    # 推奨・この人物が必死になる対象
+flaw = "頼ることが苦手で一人で抱え込む"  # lead必須・support任意・minor禁止。作中で一度は判断を誤らせる欠点
+quirk = "学者なのに部屋に漫画が二冊だけある"  # 同上。「〜のとき、〜する」の条件形で書く
+heat = "母の死に意味を見出したい"    # 同上。この人物が必死になる対象
 
 [basic]                             # 必須セクション
 gender = "female"                   # 必須
@@ -49,7 +49,7 @@ weaknesses = "やや内向的。頼ることが苦手"
 
 [motivation]                        # 行動原理（任意だが物語の核になるので埋めること）
 core_wound = '''幼少期に母親を病気で亡くした。'''
-false_belief = "努力すれば必ず報われる"   # 本人は正しいと信じているが物語中で崩される考え（一行）
+false_belief = "努力すれば必ず報われる"   # lead必須・support任意・minor禁止。本人は正しいと信じているが物語中で崩される考え（一行）
 principle = "他人を守りたい"          # 意思決定の最優先基準
 goal_external = "魔法公安の捜査官になる"
 desire_hidden = "母の死に意味を見出したい"   # 自覚していない欲求
@@ -60,7 +60,7 @@ likes = ["苺ミルク", "雨天の図書室"]
 dislikes = ["電話"]
 
 [design]                            # 任意。作劇上の設計（発想の手順は character-design-guide.md）
-screen_time = "lead"                # lead(主軸) / support(脇) / minor(端役)。他の値は validate エラー
+screen_time = "lead"                # lead(主軸) / support(脇) / minor(端役)。他の値は validate エラー。minor に物語装置キー（flaw/quirk/heat/false_belief）を書くと警告
 
 [[relations]]                       # 0 件以上。target は存在チェック対象
 target = "chara-002"                # 必須 # 佐藤太郎

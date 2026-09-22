@@ -268,3 +268,59 @@ def test_multiline_summary_and_reordered_keys_pack_ok(sample):
     ctx = ctx_of(dst, 3)
     assert "美咲が臼井市に引っ越してくる" in ctx
     assert "駅前で黒猫とすれ違う" in ctx
+
+
+def _deep_pack_sample(sample):
+    # 両キャラに物語装置キー4件を付与した複製（schema §1 の深さ制御の検証用）
+    dst = WORK / "pack_depth"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    for cid in ("chara-001", "chara-002"):
+        c = dst / "character" / f"{cid}.toml"
+        text = c.read_text(encoding="utf-8")
+        # root キーは先頭テーブルより前に差し込む（末尾追記は [[versions]] 要素に入る）
+        inject = (
+            f'flaw = "深み-{cid}-flaw"\nquirk = "深み-{cid}-quirk"\n'
+            f'heat = "深み-{cid}-heat"\n'
+        )
+        assert "\n[basic]\n" in text
+        text = text.replace("\n[basic]\n", "\n" + inject + "[basic]\n", 1)
+        text += f'\n[motivation]\nfalse_belief = "深み-{cid}-fb"\n'
+        c.write_text(text, encoding="utf-8")
+    return dst
+
+
+def _section(ctx: str, cid: str) -> str:
+    for part in re.split(r"^### ", ctx, flags=re.M):
+        if part.startswith(f"{cid}:"):
+            return part
+    return ""
+
+
+def test_depth_full_for_pov_and_first_appearance(sample):
+    # ch1: chara-001 は視点＋初出、chara-002 は初出 → 両方 full
+    dst = _deep_pack_sample(sample)
+    code, out = run(dst, "--chapter", "1")
+    assert code == 0, out
+    ctx = ctx_of(dst, 1)
+    assert "- 欠点: 深み-chara-001-flaw" in _section(ctx, "chara-001")
+    assert "- 欠点: 深み-chara-002-flaw" in _section(ctx, "chara-002")
+    assert "誤った信念" in _section(ctx, "chara-002")
+
+
+def test_depth_slim_for_non_pov_repeat(sample):
+    # ch3: 視点 chara-002 → full。chara-001 は初出1・非視点 → slim
+    dst = _deep_pack_sample(sample)
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    s2 = _section(ctx, "chara-002")
+    assert "- 欠点: 深み-chara-002-flaw" in s2
+    s1 = _section(ctx, "chara-001")
+    assert "- 欠点:" not in s1
+    assert "ズレ" not in s1
+    assert "必死になる対象" not in s1
+    assert "誤った信念" not in s1
+    # 演技情報は slim でも残る
+    assert "丁寧語" in s1
+    assert "一人称: 私" in s1

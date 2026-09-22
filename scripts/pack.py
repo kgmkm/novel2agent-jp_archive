@@ -108,7 +108,10 @@ def resolve_chara(data: dict, chapter: int) -> dict:
 
 # ---------------------------------------------------------------- レンダ
 
-def render_chara(cid: str, c: dict) -> str:
+def render_chara(cid: str, c: dict, full_depth: bool = True) -> str:
+    """full_depth=False の章では flaw / quirk / heat / false_belief を出さない。
+    物語装置キーを毎章出すと弱い LLM がチェックリストと読んで儀式化するため
+    （schema §1）。演技情報（fears / catchphrase / habits 等）は常に出す。"""
     basic = c.get("basic", {}) if isinstance(c.get("basic"), dict) else {}
     design = c.get("design") if isinstance(c.get("design"), dict) else {}
     st = f"［{design['screen_time']}］" if design.get("screen_time") else ""
@@ -133,12 +136,13 @@ def render_chara(cid: str, c: dict) -> str:
             lines.append(f"- 長所: {p['strengths']}")
         if p.get("weaknesses"):
             lines.append(f"- 短所: {p['weaknesses']}")
-    for key, label in (("flaw", "欠点"), ("quirk", "ズレ"), ("heat", "必死になる対象")):
-        if c.get(key):
-            lines.append(f"- {label}: {c[key]}")
+    if full_depth:
+        for key, label in (("flaw", "欠点"), ("quirk", "ズレ"), ("heat", "必死になる対象")):
+            if c.get(key):
+                lines.append(f"- {label}: {c[key]}")
     m = c.get("motivation")
     if isinstance(m, dict):
-        if m.get("false_belief"):
+        if full_depth and m.get("false_belief"):
             lines.append(f"- 誤った信念（物語中で崩される）: {m['false_belief']}")
         if m.get("fears"):
             lines.append(f"- 恐れ: {m['fears']}")
@@ -232,8 +236,26 @@ def collect_blocks(files: dict[Path, dict], project: Path, chapter: int, plots_b
     if missing:
         lines.append("\n**警告: character/ に存在しない ID → " + ", ".join(missing) + "**")
     lines.append("\n## 登場キャラ（この章時点で versions 解決済み）")
+    pov = plot.get("pov")
+    # 初出章の算出：物語装置キー（flaw/quirk/heat/false_belief）は
+    # 章視点キャラと各キャラの初出章にだけ出す（schema §1）。毎章出すと
+    # 弱い LLM がチェックリストと読んで儀式化する
+    first_seen: dict[str, int] = {}
+    for num in sorted(plots_by_chapter):
+        try:
+            _, pd = plots_by_chapter[num]
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(pd, dict):
+            continue
+        for s in pd.get("scenes", []) or []:
+            if not isinstance(s, dict):
+                continue
+            for member in s.get("characters", []) or []:
+                first_seen.setdefault(member, num)
     for cid in sorted(resolved):
-        lines.append(render_chara(cid, resolved[cid]))
+        full = (cid == pov) or (first_seen.get(cid) == chapter)
+        lines.append(render_chara(cid, resolved[cid], full_depth=full))
     blocks.append(Block("\n".join(lines), priority=1))
 
     # --- (2) worldbuilding 制約: priority 2

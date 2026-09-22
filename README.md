@@ -173,6 +173,11 @@ my-novel-project/
 
 ## 更新履歴
 
+### v0.4.2
+- 物語装置キー（flaw / quirk / heat / false_belief）の適用範囲を規定（`schema/toml-schema.md` §1）。lead 必須・support 1件まで任意・minor 禁止。違反は validate が警告（§5-17）
+- pack は物語装置キーを章視点キャラと各キャラの初出章にだけ出す（他章は出さない。弱い LLM の儀式化防止）。演技情報（fears / catchphrase / habits 等）は毎章据え置き
+- `quirk` は条件形（〜のとき、〜する）で書く規則を design-guide・テンプレに追加
+
 ### v0.4.1
 - plot TOML の可読性ルールを新設（`schema/toml-schema.md` §0）。長文は `'''` 複数行・1文1行・1行は全角40字目安（JLReq から最小抜粋）。ルートキーの推奨順を `id / summary / summary_status / chapter / title / pov / peak_intensity` に（編集頻度順。順序違いは検証・pack とも無視）
 - `validate.py` が長文の1行超過を警告（§5-16。エラーにしない）。`planning-workflow.md` §4 の例も新順序・複数行に更新

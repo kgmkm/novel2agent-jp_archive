@@ -198,6 +198,15 @@ def validate_characters(chars, r: Report) -> set[str]:
                 stv = design.get("screen_time")
                 if stv is not None and (not type_ok(stv, str) or stv not in VALID_SCREEN_TIME):
                     r.error(path, f"[design].screen_time 不正 '{stv}'（lead / support / minor）")
+                if type_ok(stv, str) and stv in ("support", "minor"):
+                    deep = [k for k in ("flaw", "quirk", "heat") if data.get(k)]
+                    m = data.get("motivation")
+                    if isinstance(m, dict) and m.get("false_belief"):
+                        deep.append("false_belief")
+                    if stv == "minor" and deep:
+                        r.warn(path, f"screen_time=minor に物語装置キー {deep} あり → TOMLに書かず発想手順に留めること（schema §1）")
+                    elif stv == "support" and len(deep) >= 2:
+                        r.warn(path, f"screen_time=support の物語装置キーが {len(deep)} 件 {deep} → 1件までに絞ること（schema §1）")
         basic = data.get("basic")
         if basic is None:
             r.error(path, "[basic] セクション必須")

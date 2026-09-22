@@ -279,3 +279,48 @@ def test_suffix_space_and_length_warn_only():
     v.check_id("chara-001-" + "あ" * 20, {"id": "chara-001"}, Path("x.toml"), r2)
     assert not r2.errors
     assert any("長い" in w for w in r2.warnings)
+
+
+def _with_deep_keys(ok_project, screen_time, keys=("flaw", "quirk")):
+    # root キーは先頭テーブルより前に差し込む（末尾追記は [[versions]] 要素に入る）
+    c = ok_project / "character" / "chara-001.toml"
+    text = c.read_text(encoding="utf-8")
+    root_keys = [k for k in keys if k != "false_belief"]
+    inject = "".join(f'{k} = "深み-{k}"\n' for k in root_keys)
+    assert "\n[basic]\n" in text
+    text = text.replace("\n[basic]\n", "\n" + inject + "[basic]\n", 1)
+    if "false_belief" in keys:
+        text += '\n[motivation]\nfalse_belief = "深み-false_belief"\n'
+    text += f'\n[design]\nscreen_time = "{screen_time}"\n'
+    c.write_text(text, encoding="utf-8")
+
+
+def test_minor_with_deep_keys_warns(ok_project):
+    # §1 適用範囲：minor の物語装置キーは警告（exit 0 のまま）
+    _with_deep_keys(ok_project, "minor")
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "screen_time=minor" in out
+
+
+def test_support_with_two_deep_keys_warns(ok_project):
+    _with_deep_keys(ok_project, "support", ("flaw", "quirk"))
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "screen_time=support" in out
+
+
+def test_lead_with_deep_keys_no_scope_warning(ok_project):
+    _with_deep_keys(ok_project, "lead", ("flaw", "quirk", "heat", "false_belief"))
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "screen_time=lead" not in out
+    assert "screen_time=support" not in out
+    assert "物語装置キー" not in out
+
+
+def test_support_with_one_deep_key_ok(ok_project):
+    _with_deep_keys(ok_project, "support", ("quirk",))
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "物語装置キー" not in out

@@ -30,9 +30,9 @@ id = "chara-001"                    # 必須・ファイル名先頭と一致（
 name_ja = "桜井美咲"                # 必須。仮名の間は "TBD ……"（validate が警告）
 name_ruby = "さくらい みさき"        # 必須（初出ふりがな検証用）
 role = "protagonist"                # 必須。protagonist / antagonist / support のいずれか
-flaw = "頼ることが苦手で一人で抱え込む"  # 推奨・作中で一度は判断を誤らせる欠点
-quirk = "学者なのに部屋に漫画が二冊だけある"  # 推奨・その人物だけのズレ
-heat = "母の死に意味を見出したい"    # 推奨・必死になる対象（各章に一度は場面を）
+flaw = "頼ることが苦手で一人で抱え込む"  # lead必須・support任意・minor禁止。作中で一度は判断を誤らせる欠点
+quirk = "学者なのに部屋に漫画が二冊だけある"  # 同上。その人物だけのズレ。「〜のとき、〜する」の条件形で書く
+heat = "母の死に意味を見出したい"    # 同上。必死になる対象（各章に一度は場面を）
 
 [basic]                             # 必須セクション
 gender = "female"
@@ -82,8 +82,10 @@ note = "覚醒後。制服が黒い戦闘服に"
 - `age` などキャラ固有の追加キーは自由（スキーマは必須キーのみ検証）
 - キャラ設計の手順は `references/character-design-guide.md` を正とする（欠点 `flaw` を先に決める・名前を先に決める等）
 - `role` は protagonist / antagonist / support の 3 値（validate 検査）。出番の重みは `[design].screen_time`（lead / support / minor）で表す
+- 物語装置キー（`flaw` / `quirk` / `heat` / `[motivation].false_belief`）の適用範囲：**lead は必須、support は1件まで任意、minor は禁止**。minor は発想手順（design-guide）だけ使い TOML に書かない。違反は validate が警告（§5-17）。全員に書くと pack 経由で弱い LLM が毎章儀式化する
+- `quirk` は「〜のとき、〜する」の条件形で書く（無条件形・頻度副詞は毎回発動と読まれる）。`flaw` は「作中で一度は判断を誤らせる」1回指定を守り、C-2 で達成確認する
 - `flaw` / `quirk` / `heat` と `[design].screen_time` と `[[relations]].function` / `no_compromise` は任意キー。列挙値違い・仮名（TBD）残留は validate が検査
-- pack は flaw / quirk / heat / false_belief / fears / catchphrase / habits / second_person と screen_time をキャラ情報に出力する。`height_cm` / `birthday` は出力しない（画像生成・イベント管理用のデータ）
+- pack のキャラ情報：`fears` / `catchphrase` / `habits` / `second_person` と `screen_time` は毎章出す。物語装置キー（flaw / quirk / heat / false_belief）は**章視点キャラと各キャラの初出章にだけ出す**（他章は出さない）。`height_cm` / `birthday` は出力しない（画像生成・イベント管理用のデータ）
 
 ---
 
@@ -197,6 +199,7 @@ status = "draft"                    # draft / written / revised / confirmed
 | 14 | production-log の affects 参照先の存在 | 警告 |
 | 15 | character role の列挙値（protagonist / antagonist / support） | エラー |
 | 16 | plot 長文（summary / scenes.content / foreshadowing.content / established.content）の1行超過（§0 可読性ルール・全角40字目安） | 警告 |
+| 17 | screen_time=minor の物語装置キー（flaw / quirk / heat / false_belief）所持、support の2件以上所持（§1 適用範囲） | 警告 |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
 `validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§7）。
@@ -211,7 +214,7 @@ status = "draft"                    # draft / written / revised / confirmed
 
 ### 6.1 収録内容
 1. meta.toml から対象章を特定
-2. 登場キャラ = 対象章 scenes.characters の和集合 → 各キャラの `from_chapter ≦ N ≦ to_chapter` を満たす version で属性を解決
+2. 登場キャラ = 対象章 scenes.characters の和集合 → 各キャラの `from_chapter ≦ N ≦ to_chapter` を満たす version で属性を解決。物語装置キー（flaw / quirk / heat / false_belief）は章視点キャラと各キャラの初出章にだけ出し、他章は出さない（§1。弱い LLM の儀式化防止）
 3. worldbuilding の `[[constraints]]` 全件
 4. 前章：`novel/chN-1.md` 全文。それ以前：各章の `summary`（confirmed のみ、未確定は established から代替）
 5. 未回収伏線：`resolve_chapter ≦ N` かつ `resolved_at` なし
