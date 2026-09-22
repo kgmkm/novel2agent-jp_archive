@@ -139,3 +139,143 @@ def test_character_role_enum_exit_1(ok_project):
     code, out = run(ok_project)
     assert code == 1, out
     assert "role 不正" in out
+
+
+def test_long_single_line_warns_but_exits_0(ok_project):
+    # §0 可読性ルール: 全角50字 = 100字相当 > 80 で警告。エラーにしない
+    plot = ok_project / "plot" / "plot-ch01.toml"
+    long_summary = "あ" * 50 + "。"
+    plot.write_text(
+        plot.read_text(encoding="utf-8").replace(
+            'summary = "美咲が道端で魔法に覚醒する。"', f'summary = "{long_summary}"'
+        ),
+        encoding="utf-8",
+    )
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "80字相当超" in out
+    assert "summary" in out
+
+
+REORDERED_MULTILINE_PLOT = """id = "plot-ch01"
+summary = '''
+美咲が道端で魔法に覚醒する。
+帰り道、空が赤かった。
+'''
+summary_status = "confirmed"
+chapter = 1
+title = "覚醒"
+pov = "chara-001"
+
+[[scenes]]
+title = "帰り道"
+location = "駅前商店街"
+time = "夕方"
+pov = "chara-001"
+characters = ["chara-001", "chara-002"]
+content = '''
+太郎の机の写真が視界に入る。
+美咲は足を止める。
+'''
+
+[[foreshadowing]]
+id = "fs-001"
+content = "太郎の机の古びた写真"
+resolve_chapter = 3
+"""
+
+
+def test_new_key_order_and_multiline_pass(ok_project):
+    # §3 推奨順 + 複数行リテラル: 警告なし・エラーなし（順序は機械の動作に影響しない）
+    (ok_project / "plot" / "plot-ch01.toml").write_text(
+        REORDERED_MULTILINE_PLOT, encoding="utf-8"
+    )
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "[ERROR]" not in out
+    assert "80字相当超" not in out
+
+
+def test_filename_suffix_passes(ok_project):
+    # §0: {ID}-サフィックス名は exit 0（表示専用。ID が正本）
+    (ok_project / "plot" / "plot-ch01.toml").rename(
+        ok_project / "plot" / "plot-ch01-覚醒.toml"
+    )
+    (ok_project / "character" / "chara-001.toml").rename(
+        ok_project / "character" / "chara-001-美咲.toml"
+    )
+    meta = ok_project / "meta.toml"
+    meta.write_text(
+        meta.read_text(encoding="utf-8").replace(
+            'plot = "plot/plot-ch01.toml"', 'plot = "plot/plot-ch01-覚醒.toml"'
+        ),
+        encoding="utf-8",
+    )
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "[ERROR]" not in out
+    assert "サフィックス" not in out  # 体裁警告もなし
+
+
+def test_filename_suffix_prefix_mismatch_exit_1(ok_project):
+    # 先頭 ID と中身の id が違えばエラー（サフィックス付きでも検出）
+    (ok_project / "character" / "chara-001.toml").rename(
+        ok_project / "character" / "chara-001-美咲.toml"
+    )
+    c = ok_project / "character" / "chara-001-美咲.toml"
+    c.write_text(
+        c.read_text(encoding="utf-8").replace('id = "chara-001"', 'id = "chara-002"'),
+        encoding="utf-8",
+    )
+    code, out = run(ok_project)
+    assert code == 1, out
+    assert "ファイル名=ID 不一致" in out
+
+
+def test_filename_suffix_chapter_check_with_suffix(ok_project):
+    # plot 章番号照合はサフィックスを無視する（一致なら警告なし、不一致なら警告）
+    (ok_project / "plot" / "plot-ch01.toml").rename(
+        ok_project / "plot" / "plot-ch01-覚醒.toml"
+    )
+    meta = ok_project / "meta.toml"
+    meta.write_text(
+        meta.read_text(encoding="utf-8").replace(
+            'plot = "plot/plot-ch01.toml"', 'plot = "plot/plot-ch01-覚醒.toml"'
+        ),
+        encoding="utf-8",
+    )
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "番号が一致しない" not in out
+    plot = ok_project / "plot" / "plot-ch01-覚醒.toml"
+    plot.write_text(
+        plot.read_text(encoding="utf-8").replace("chapter = 1", "chapter = 2"),
+        encoding="utf-8",
+    )
+    code, out = run(ok_project)
+    assert code == 0, out
+    assert "番号が一致しない" in out
+
+
+def _report():
+    sys.path.insert(0, str(HERE.parent))
+    import validate as v
+
+    return v, v.Report()
+
+
+def test_suffix_forbidden_chars_are_error():
+    v, r = _report()
+    v.check_id("chara-001-美*咲", {"id": "chara-001"}, Path("chara-001-美咲.toml"), r)
+    assert any("使用禁止文字" in e for e in r.errors)
+
+
+def test_suffix_space_and_length_warn_only():
+    v, r = _report()
+    v.check_id("chara-001-美 咲", {"id": "chara-001"}, Path("x.toml"), r)
+    assert not r.errors
+    assert any("スペース" in w for w in r.warnings)
+    r2 = v.Report()
+    v.check_id("chara-001-" + "あ" * 20, {"id": "chara-001"}, Path("x.toml"), r2)
+    assert not r2.errors
+    assert any("長い" in w for w in r2.warnings)

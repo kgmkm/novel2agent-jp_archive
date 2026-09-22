@@ -173,6 +173,11 @@ my-novel-project/
 
 ## 更新履歴
 
+### v0.4.1
+- plot TOML の可読性ルールを新設（`schema/toml-schema.md` §0）。長文は `'''` 複数行・1文1行・1行は全角40字目安（JLReq から最小抜粋）。ルートキーの推奨順を `id / summary / summary_status / chapter / title / pov / peak_intensity` に（編集頻度順。順序違いは検証・pack とも無視）
+- `validate.py` が長文の1行超過を警告（§5-16。エラーにしない）。`planning-workflow.md` §4 の例も新順序・複数行に更新
+- ファイル名に人間向けサフィックスを許可（`chara-001-瀬川匠.toml`・`plot-ch01-導入.toml`。ID が正本、サフィックスは表示専用）。使用禁止文字はエラー、スペース・長さは警告
+
 ### v0.4.0
 - カクヨム投稿対応 — `references/vfm-to-kakuyomu-workflow.md`（縦読み記法→カクヨム記法の対比・投稿手順）と `scripts/vfm_to_kakuyomu.py`（VFM→カクヨム変換。ルビ・傍点・場面転換・検証）を新設。pixiv 版と同構造
 - SKILL.md 参照表と README ファイル構成に両ファイルを追加

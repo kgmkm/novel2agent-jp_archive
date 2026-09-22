@@ -99,9 +99,9 @@ words = ["化学用語", "英語"]
 note = "山育ちのため知らない"
 ```
 
-## 3. キャラ（character/chara-NNN.toml）
+## 3. キャラ（character/chara-NNN[-サフィックス].toml）
 
-テンプレートは `references/character-template.md`、発想の手順は `references/character-design-guide.md`。必須キーのみスキーマが検証し、追加キーは自由。記入例はテンプレート側。
+テンプレートは `references/character-template.md`、発想の手順は `references/character-design-guide.md`。必須キーのみスキーマが検証し、追加キーは自由。記入例はテンプレート側。ファイル名の末尾に名前を付けるとエクスプローラで見分けやすい（例：`chara-001-瀬川匠.toml`。書式は `schema/toml-schema.md` §0）。
 
 ### 3-0. 名前を先に決める
 
@@ -116,18 +116,18 @@ note = "山育ちのため知らない"
 - 1 キャラ 1 ファイル。章またぎの変化（悪堕ち・所属変更）は `[[versions]]` に変更キーのみ書く。全項目の再記述はしない
 - `[basic]` 配下のキー（age 等）を versions に書くと pack.py が `[basic]` に反映する（schema §1）
 
-## 4. プロット（plot/plot-chNN.toml）
+## 4. プロット（plot/plot-chNN[-サフィックス].toml）
 
-1 章 1 ファイル。シーン本文は**ここに書かない**（`novel/` のみ本文）。
+1 章 1 ファイル。シーン本文は**ここに書かない**（`novel/` のみ本文）。ファイル名の末尾に副題を付けると見分けやすい（例：`plot-ch01-導入.toml`）。
 
 ```toml
 id = "plot-ch01"
+summary = ""                        # 執筆後に LLM が proposed で記入。summary は ID の次に置く（最頻編集のため）
+summary_status = "proposed"
 chapter = 1
 title = "導入"
-peak_intensity = 40                 # proposal.md の感情曲線と一致させる
 pov = "chara-001"
-summary = ""                        # 執筆後に LLM が proposed で記入
-summary_status = "proposed"
+peak_intensity = 40                 # proposal.md の感情曲線と一致させる。機械参照が主のため後ろに置く
 
 [[scenes]]
 title = "引っ越し"
@@ -135,7 +135,10 @@ location = "臼井駅"
 time = "夕方・秋"
 pov = "chara-001"
 characters = ["chara-001", "chara-002"]
-content = '''荷物の中から古い日記が出てくる。美咲はページを開けず箱に戻す。'''  # 演出指示
+content = '''
+荷物の中から古い日記が出てくる。
+美咲はページを開けず箱に戻す。
+'''                                 # 演出指示。長文は §0 可読性ルール（1文1行・40字目安）で改行
 emotion_peak = "静かな導入"
 
 [[foreshadowing]]
@@ -149,6 +152,9 @@ status = "proposed"                 # 推敲完了時に人間が confirmed へ
 ```
 
 シーン雛形の必須：title / location / pov / characters / content（演出）。`time`・`emotion_peak`・キー台詞は推奨。
+
+ルートキーは `id / summary / summary_status / chapter / title / pov / peak_intensity` の順に書く（キー順は機械の動作に影響しない。編集頻度順）。
+`summary` / `content` の長文は `schema/toml-schema.md` §0 の可読性ルール（`'''` 複数行・1文1行・1行は全角40字目安、行数は無制限）で書く。LLM に summary を記入させる場合も同じ形で指示する。
 
 ## 5. meta.toml（章の唯一の目次）
 
@@ -165,7 +171,7 @@ novel = "novel/ch01.md"             # 未執筆は省略
 status = "draft"                    # draft / written / revised / confirmed
 ```
 
-章順はこの `[[chapters]]` 記述順で決まる。ファイル名依存の探索はしない。
+章順はこの `[[chapters]]` 記述順で決まる。ファイル名依存の探索はしない。`plot` パスはサフィックス付きの場合フル名で書く（例：`plot/plot-ch01-導入.toml`）。
 
 ## 6. AGENTS.md（作品の憲法）
 

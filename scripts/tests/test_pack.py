@@ -229,3 +229,42 @@ def test_motivation_and_second_person_rendered(sample):
     assert "- 恐れ: 置いていかれること" in ctx
     assert "- 決め台詞: ……そうですか" in ctx
     assert "- 癖: 袖口を直す" in ctx
+
+
+def test_multiline_summary_and_reordered_keys_pack_ok(sample):
+    # §0 可読性ルール形（新順序＋複数行 summary）でも pack が通り、要約文が載る
+    dst = WORK / "pack_reordered"
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(sample, dst)
+    (dst / "plot" / "plot-ch01.toml").write_text(
+        'id = "plot-ch01"\n'
+        "summary = '''\n"
+        "美咲が臼井市に引っ越してくる。\n"
+        "駅前で黒猫とすれ違う。\n"
+        "'''\n"
+        'summary_status = "confirmed"\n'
+        "chapter = 1\n"
+        'title = "導入"\n'
+        'pov = "chara-001"\n'
+        "\n[[scenes]]\n"
+        'title = "引っ越し"\n'
+        'location = "臼井駅"\n'
+        'pov = "chara-001"\n'
+        'characters = ["chara-001", "chara-002"]\n'
+        "content = '''\n"
+        "荷物の中から古い日記帳が出てくる。\n"
+        "'''\n"
+        "\n[[established]]\n"
+        'content = "美咲が臼井市に引っ越した"\n'
+        'status = "confirmed"\n'
+        "\n[[foreshadowing]]\n"
+        'id = "fs-001"\n'
+        'content = "荷物から出た古い日記"\n'
+        "resolve_chapter = 3\n",
+        encoding="utf-8",
+    )
+    code, out = run(dst, "--chapter", "3")
+    assert code == 0, out
+    ctx = ctx_of(dst, 3)
+    assert "美咲が臼井市に引っ越してくる" in ctx
+    assert "駅前で黒猫とすれ違う" in ctx

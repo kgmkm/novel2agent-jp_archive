@@ -17,6 +17,7 @@ import argparse
 import re
 import sys
 import tomllib
+import unicodedata
 from pathlib import Path
 
 ID_PREFIXES = {"chara", "plot", "fs", "world"}
@@ -33,6 +34,29 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 ERR = "[ERROR]"
 WARN = "[WARN]"
+
+# §0 可読性ルール：1行は全角40字（半角80字相当）目安
+READABILITY_WIDTH = 80
+
+# §0 ファイル名サフィックスで使用禁止の文字（Windows/macOS 共通で作れない・壊れるもの）
+FORBIDDEN_FILENAME_CHARS = set('\\/:*?"<>|')
+
+
+def display_width(text: str) -> int:
+    """半角換算の表示幅。全角（W/F）は2、それ以外は1で数える。"""
+    return sum(2 if unicodedata.east_asian_width(c) in ("W", "F") else 1 for c in text)
+
+
+def check_readability(path, label: str, value: object, r: Report) -> None:
+    """plot 長文の1行超過を警告する（スキーマ §5-16。エラーにしない）。"""
+    if not isinstance(value, str) or not value.strip():
+        return
+    for line in value.splitlines():
+        if display_width(line) > READABILITY_WIDTH:
+            head = line.strip()[:30]
+            r.warn(path, f"{label}: 1行が80字相当超（{display_width(line)}字相当・「{head}…」）"
+                         f"→ §0可読性ルール（1文1行・40字目安）で改行すること")
+            return
 
 
 # ---------------------------------------------------------------- ローダ
@@ -95,21 +119,42 @@ def check_keys(data: dict, required: dict[str, type], path, label: str, r: Repor
 
 
 def check_id(stem: str, data: dict, path, r: Report) -> None:
+    # スキーマ §0: ファイル名は {ID} または {ID}-サフィックス（例: chara-001-瀬川匠）
+    file_id, suffix = file_id_of(stem)
+    if file_id is None:
+        r.error(path, f"ファイル名形式不正: {stem}（期待 {{ID}} または {{ID}}-サフィックス）")
+        return
     if "id" not in data:
         r.error(path, "id キーが存在しない")
-    elif data["id"] != stem:
-        r.error(path, f"ファイル名=ID 不一致: id={data['id']!r}")
-    pref, sep, num = stem.partition("-")
-    if not sep or pref not in ID_PREFIXES:
-        r.error(path, f"ID prefix 不正: {stem} (許可 {sorted(ID_PREFIXES)})")
+    elif data["id"] != file_id:
+        r.error(path, f"ファイル名=ID 不一致: id={data['id']!r}（ファイル名先頭は {file_id!r}）")
+    num = re.search(r"(\d+)$", file_id).group(1)
+    if int(num) < 1:
+        r.error(path, f"ID 連番不正: {file_id}（連番は 1 以上）")
+    if suffix is not None:
+        check_suffix(path, suffix, r)
+
+
+def file_id_of(stem: str) -> tuple[str | None, str | None]:
+    """ファイル名先頭から ID 部分を取り出す。suffix 付きも受理する。"""
+    m = re.match(r"^(chara-\d{3}|world-\d{3}|plot-ch\d{2}|fs-\d{3})(?:-(.+))?$", stem)
+    if not m:
+        return None, None
+    return m.group(1), m.group(2)
+
+
+def check_suffix(path, suffix: str, r: Report) -> None:
+    """人間向けサフィックスの検査。OS で作れない文字はエラー、体裁は警告。"""
+    if any(c in FORBIDDEN_FILENAME_CHARS or ord(c) < 32 for c in suffix):
+        r.error(path, f"ファイル名サフィックスに使用禁止文字あり: {suffix!r}（\\/ : * ? \" < > | と制御文字は不可）")
         return
-    # plot 章ファイルは plot-chNN 形式を許可（スキーマ §3 の例に準拠）
-    if pref == "plot":
-        if not (stem.startswith("plot-ch") and stem[7:].isdigit()
-                and len(stem[7:]) == 2 and int(stem[7:]) >= 1):
-            r.error(path, f"ID 連番不正: {stem} (期待 plot-chNN)")
-    elif len(num) != 3 or not num.isdigit() or int(num) < 1:
-        r.error(path, f"ID 連番不正: {stem} (期待 {pref}-NNN)")
+    if suffix != suffix.strip(" .") or suffix.startswith("."):
+        r.error(path, f"ファイル名サフィックスの先頭・末尾不正: {suffix!r}（先頭の .・末尾の空白/. は不可）")
+        return
+    if " " in suffix or "　" in suffix:
+        r.warn(path, f"ファイル名サフィックスにスペースあり: {suffix!r} → _ にすること")
+    if display_width(suffix) > 30:
+        r.warn(path, f"ファイル名サフィックスが長い（{display_width(suffix)}字相当）: {suffix!r} → 全角10字以内目安にすること")
 
 
 def ranges_overlap(known: list[tuple[int, int | None]], a: int, b: int | None, path, idx: int, r: Report) -> None:
@@ -233,7 +278,8 @@ def validate_plots(plots, ref_ids: set[str], r: Report) -> None:
             path, "plot ルート", r,
         )
         ch = data.get("chapter")
-        if type_ok(ch, int) and path.stem != f"plot-ch{ch:02d}":
+        file_id, _suffix = file_id_of(path.stem)
+        if type_ok(ch, int) and file_id != f"plot-ch{ch:02d}":
             r.warn(path, f"chapter={ch} とファイル名 {path.stem} の番号が一致しない")
         if type_ok(data.get("pov"), str) and data["pov"] not in ref_ids:
             r.error(path, f"pov: ID '{data['pov']}' が存在しない")
@@ -260,6 +306,7 @@ def validate_plots(plots, ref_ids: set[str], r: Report) -> None:
                         r.error(path, f"scenes[{i}].characters: ID '{cid}' が存在しない")
             if type_ok(s.get("pov"), str) and s["pov"] not in ref_ids:
                 r.error(path, f"scenes[{i}].pov: ID '{s['pov']}' が存在しない")
+            check_readability(path, f"scenes[{i}].content", s.get("content"), r)
 
         for i, f in enumerate(data.get("foreshadowing", [])):
             if not isinstance(f, dict):
@@ -277,6 +324,7 @@ def validate_plots(plots, ref_ids: set[str], r: Report) -> None:
             ra = f.get("resolved_at")
             if type_ok(rc, int) and type_ok(ra, int) and ra != rc:
                 r.warn(path, f"foreshadowing[{i}]: resolved_at={ra} が resolve_chapter={rc} と不一致")
+            check_readability(path, f"foreshadowing[{i}].content", f.get("content"), r)
 
         for i, e in enumerate(data.get("established", [])):
             if not isinstance(e, dict):
@@ -293,8 +341,10 @@ def validate_plots(plots, ref_ids: set[str], r: Report) -> None:
             for cid in e.get("characters", []):
                 if type_ok(cid, str) and cid not in ref_ids:
                     r.error(path, f"established[{i}].characters: ID '{cid}' が存在しない")
+            check_readability(path, f"established[{i}].content", e.get("content"), r)
 
         ss = data.get("summary_status")
+        check_readability(path, "summary", data.get("summary"), r)
         ch = data.get("chapter")
         if ss is not None and ss not in VALID_SUMMARY_STATUS:
             r.error(path, f"summary_status 不正 '{ss}'")

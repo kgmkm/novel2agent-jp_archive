@@ -4,7 +4,7 @@
 
 ルール：
 
-- 各キャラ 1 ファイル（`character/chara-NNN.toml`、id = ファイル名）
+- 各キャラ 1 ファイル（`character/chara-NNN[-サフィックス].toml`、id = ファイル名先頭。例：`chara-001-瀬川匠.toml`）
 - **章またぎ変化は `[[versions]]` に「変更されるキーのみ」書く**
 - 必須キーのみ validate が検証。追加キーは自由（toml-schema §1）
 - pack に出力されるのは執筆に効くキーだけ（`height_cm` / `birthday` などは出力外）
@@ -13,7 +13,7 @@
 ## テンプレート
 
 ```toml
-id = "chara-001"                    # 必須・ファイル名と一致
+id = "chara-001"                    # 必須・ファイル名先頭と一致（例: chara-001-瀬川匠.toml）
 name_ja = "桜井美咲"                # 必須。固まる前は候補を先に出す（発想ガイド参照）
 name_ruby = "さくらい みさき"        # 必須（初出ふりがな検証用）
 role = "protagonist"                # 必須。protagonist / antagonist / support のいずれか

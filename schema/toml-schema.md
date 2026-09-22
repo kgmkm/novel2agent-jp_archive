@@ -3,20 +3,30 @@
 ## 0. 共通規則
 
 - **文字コード**：UTF-8
-- **ファイル名 = ID**：`chara-001.toml` の `id` は必ず `"chara-001"`。validator が強制する
+- **ファイル名 = ID先頭**：ファイル名は `{ID}` または `{ID}-サフィックス.toml`。例：`chara-001-瀬川匠.toml` の `id` は `"chara-001"`。サフィックスは人間がエクスプローラで見分けるための表示専用（ID が正本。古くなっても動作に影響しない）。validator が先頭一致を強制する（§5-3）
+  - サフィックスに使える文字：日本語・英数字・`_`・`-`。`\/:*?"<>|` と制御文字は不可（Windows/macOS で作れない。validate がエラーにする）
+  - 半角・全角スペースは `_` にする（残っていたら警告）。長さは全角10字以内目安（超過で警告）
+  - 既存のサフィックスなし名（`chara-001.toml`）もそのまま有効。移行不要
+  - `meta.toml` の `plot` パス・本文 `novel/chNN.md` の命名は対象外（前者はフル名で書く。後者は pixiv-export の章順規約があるため変えない）
 - **ID 命名**：`{prefix}-{3桁連番}`。prefix は `chara` / `fs` / `world`。シリーズ内で一意
 - **plot 章ファイルの例外**：plot のみ章番号を ID に含む `plot-ch{2桁}.toml`（例：`plot-ch01.toml`、id も `"plot-ch01"`）。meta.toml から参照しやすくするための例外。validate.py は両形式でなくこの形式のみを検証する
 - **章範囲**：`from_chapter = N`、`to_chapter = M`（整数。終端未定は `to_chapter` を省略）
 - **status**：`"proposed"`（LLM提案・未確定）または `"confirmed"`（人間承認済）。省略時は confirmed 扱い。established / summary のみ使用
 - **コメント**：ID 参照箇所には `# 桜井美咲` のような人間向けコメントを許可（機械は無視）
 - **パーサ**：読込は `tomllib`（Python 3.11+ 標準）。書込が必要な場合のみ `tomli-w`
+- **キー順序は人間が編集しやすい順にする**：TOML のキー記述順は機械の動作に影響しない（validate / pack は順序を見ない）ため、人間が編集しやすくなると判断するなら自由に入れ替えて良い。各ファイルの推奨順は §1〜§4 の例の通り
+- **長文の改行（可読性ルール）**：plot の `summary` / `[[scenes]].content` / `[[foreshadowing]].content` / `[[established]].content` は `'''` 複数行リテラルで書き、次の2規則を守る（JLReq から最小抜粋。厳密な組版禁則は pack・投稿変換側の責務とし、ソースには持ち込まない）
+  1. **1文1行**：`。！？…`＋閉じ括弧（`」』）〉`）の後ろで改行する。git diff が文単位になり推敲で差分が読める
+  2. **1行は全角40字（半角80字相当）目安**：文末なしで超える場合は読点・接続詞の前・開き括弧の前で折る。行頭に `」』）、。、？！…` を置かず、行末に `「『（［` を置かない
+  - 空の `summary` だけは `summary = ""` のまま許す（未執筆のマーカー）。中身を書くときは `'''` にする
+  - validate は1行超過を**警告**する（エラーにしない。§5-16）
 
 ---
 
-## 1. character（character/chara-NNN.toml）
+## 1. character（character/chara-NNN[-サフィックス].toml）
 
 ```toml
-id = "chara-001"                    # 必須・ファイル名と一致
+id = "chara-001"                    # 必須・ファイル名先頭と一致（例: chara-001-瀬川匠.toml）
 name_ja = "桜井美咲"                # 必須。仮名の間は "TBD ……"（validate が警告）
 name_ruby = "さくらい みさき"        # 必須（初出ふりがな検証用）
 role = "protagonist"                # 必須。protagonist / antagonist / support のいずれか
@@ -77,7 +87,7 @@ note = "覚醒後。制服が黒い戦闘服に"
 
 ---
 
-## 2. worldbuilding（worldbuilding/world-NNN.toml）
+## 2. worldbuilding（worldbuilding/world-NNN[-サフィックス].toml）
 
 ```toml
 id = "world-001"
@@ -99,17 +109,19 @@ target = "chara-003"                # unknown_to の場合のみ・誰の知識�
 
 ---
 
-## 3. plot（plot/plot-chNN.toml）
+## 3. plot（plot/plot-chNN[-サフィックス].toml）
 
 ```toml
-id = "plot-ch01"                    # 必須・ファイル名と一致（plot-chNN）
+id = "plot-ch01"                    # 必須・ファイル名先頭と一致（例: plot-ch01-導入.toml）
+summary = '''
+美咲は窓の外を見ていた。
+雨粒がガラスを伝い、遠くで雷が鳴っている。
+'''                                 # 章要約。執筆後にLLMがproposedで記入。長文は§0可読性ルール（1文1行・40字目安）
+summary_status = "proposed"         # summary の確定状態。summary と一体のため直後に置く
 chapter = 1                         # 必須・章番号（整数）
 title = "覚醒"                      # 必須
-peak_intensity = 60                 # 任意・感情曲線のピーク(%)
 pov = "chara-001"                   # 推奨・基本視点キャラ # 桜井美咲
-
-summary = ""                        # 章要約。執筆後にLLMがproposedで記入
-summary_status = "proposed"         # summary の確定状態
+peak_intensity = 60                 # 任意・感情曲線のピーク(%)。機械参照が主のため後ろに置く
 
 [[scenes]]                          # 必須・1件以上
 title = "大学の廊下"                # 必須
@@ -117,7 +129,10 @@ location = "私立大学・1号館3階"      # 必須
 time = "午後・雨"                   # 推奨
 pov = "chara-001"                   # 必須・章povと異なる場合はこちら優先
 characters = ["chara-001", "chara-002"]  # 必須・登場キャラID列
-content = '''美咲は窓の外を見ていた。雨粒がガラスを伝い——'''  # 必須・演出指示
+content = '''
+美咲は窓の外を見ていた。
+雨粒がガラスを伝い——
+'''                                 # 必須・演出指示。長文は§0可読性ルールで改行
 emotion_peak = "静かな導入"          # 任意
 
 [[foreshadowing]]                   # 任意・伏線
@@ -133,6 +148,8 @@ characters = ["chara-001"]          # 関連キャラ（任意）
 ```
 
 **規則**：
+- ルートキーの推奨順は `id / summary / summary_status / chapter / title / pov / peak_intensity`。編集頻度順（summary を毎回触るため ID の次に）。順序違いは検証・pack とも無視する
+- 長文は §0 可読性ルール（`'''` 複数行・1文1行・1行40字目安）で書く。LLM に生成させる場合もこの形を指示する（行数は無制限）
 - 本文は `novel/chNN.md` にのみ書く。`scenes.content` はプロット（演出指示）であり本文の複製にしない
 - 伏線の回収は `resolved_at` に一元化。established に伏線回収は書かない
 - validate は `resolve_chapter` と `resolved_at` の整合（未回収のまま最終章を超えていないか等）をチェック
@@ -166,7 +183,7 @@ status = "draft"                    # draft / written / revised / confirmed
 |---|------|--------|
 | 1 | TOML 構文 | エラー（停止） |
 | 2 | 必須キーと型 | エラー |
-| 3 | ファイル名 = id の一致 | エラー |
+| 3 | ファイル名先頭 = id の一致（`{ID}-サフィックス.toml` 可） | エラー |
 | 4 | ID 重複（プロジェクト全体） | エラー |
 | 5 | 参照 ID の存在（relations.target / scenes.characters / pov） | エラー |
 | 6 | meta.toml のファイルパス存在 | エラー |
@@ -179,6 +196,7 @@ status = "draft"                    # draft / written / revised / confirmed
 | 13 | production-log の必須キー・kind/by 列挙値・id 形式/重複・date 形式 | エラー |
 | 14 | production-log の affects 参照先の存在 | 警告 |
 | 15 | character role の列挙値（protagonist / antagonist / support） | エラー |
+| 16 | plot 長文（summary / scenes.content / foreshadowing.content / established.content）の1行超過（§0 可読性ルール・全角40字目安） | 警告 |
 
 `validate.py --index`：全 ID と name_ja / title の対応一覧を出力。
 `validate.py --log [--affects ID]`：制作ログを日付順の表で出力（§7）。

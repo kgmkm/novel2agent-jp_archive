@@ -1,7 +1,7 @@
 ---
 name: novel2agent-jp
 description: "Use when writing Japanese novels with AI coding agents (Hermes, Claude Code, opencode, goose). File-based, agent-agnostic workflow: settings in TOML, deterministic context packs, validation scripts."
-version: 0.4.0
+version: 0.4.1
 ---
 
 # novel2agent-jp
