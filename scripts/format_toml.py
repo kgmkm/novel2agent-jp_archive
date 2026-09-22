@@ -44,6 +44,8 @@ LITERAL_RE = re.compile(r"'''(.*?)'''", re.DOTALL)
 
 BREAK_AFTER = set("、，, 　\t。！？…―—")
 BREAK_BEFORE = set("「『（［〈《【")
+# 文末判定：この正規表現に一致しない行は文の途中で折れた継続行 → 次行と結合する
+SENT_END_RE = re.compile(r"[。！？…]+[」』）〉》】]*$")
 LINE_HEAD_NG = set("」』）、。，．？！…―—ー・:;)]}）〉》】ぁぃぅぇぉっゃゅょァィゥェォッャュョ")
 LINE_TAIL_NG = set("「『（［〈《【([:")
 
@@ -87,7 +89,10 @@ def wrap_sentence(s: str, width: int = WIDTH) -> list[str]:
                 break_pos = len(cur)
                 break_w = cur_w
         if cur_w > width:
-            if break_pos > 0 and break_w >= MIN_BEFORE_BREAK:
+            # ハードカット時の尻尾幅を先に見積もる（数文字の孤立行を作らないため）
+            rest_w = display_width("".join(chars[i + 1:]))
+            hard_tail_w = display_width(cur[-1:]) + rest_w
+            if break_pos > 0 and (break_w >= MIN_BEFORE_BREAK or hard_tail_w <= SHORT_MERGE_WIDTH):
                 head, tail = cur[:break_pos], cur[break_pos:]
                 # 行頭禁則が次行頭に来るなら1字引き込む
                 while tail and tail[0] in LINE_HEAD_NG and len(head) > 1:
@@ -98,8 +103,12 @@ def wrap_sentence(s: str, width: int = WIDTH) -> list[str]:
                 break_pos = -1
                 break_w = 0
             else:
-                # ハードカット（禁則だけ避ける）
+                # ハードカット：尻尾が短文以下にならないよう切り位置を戻す
+                rest = chars[i + 1:]
+                rest_w = display_width("".join(rest))
                 cut = len(cur) - 1
+                while cut > 1 and display_width(cur[cut:]) + rest_w <= SHORT_MERGE_WIDTH:
+                    cut -= 1
                 while cut > 1 and (cur[cut - 1] in LINE_TAIL_NG):
                     cut -= 1
                 head, tail = cur[:cut], cur[cut:]
@@ -143,11 +152,20 @@ def group_sentences(sentences: list[str], width: int = WIDTH) -> list[str]:
 
 def reflow_content(inner: str) -> str:
     """リテラル中身を行単位→文単位→短文結合→幅詰めで流し直す。"""
+    raws = [r.strip() for r in inner.strip().replace("\r\n", "\n").split("\n") if r.strip()]
+    # 継続行の結合：文末句読点で終わらない行は文の途中で折れた断片 → 次行と結合する
+    joined: list[str] = []
+    buf = ""
+    for raw in raws:
+        buf += raw
+        if SENT_END_RE.search(buf):
+            joined.append(buf)
+            buf = ""
+    if buf:
+        joined.append(buf)
     sents: list[str] = []
-    for raw in inner.strip().replace("\r\n", "\n").split("\n"):
-        if not raw.strip():
-            continue
-        sents.extend(split_sentences(raw))
+    for line in joined:
+        sents.extend(split_sentences(line))
     lines: list[str] = []
     for line in group_sentences(sents):
         lines.extend(wrap_sentence(line))

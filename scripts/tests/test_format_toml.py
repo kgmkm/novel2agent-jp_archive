@@ -136,3 +136,25 @@ def test_long_sentences_stay_split():
     v = tomllib.loads((p / "plot" / "plot-ch01.toml").read_text(encoding="utf-8"))["content"]
     assert v == ("軟化したロクサーヌの顔を見て、ノエミアが自分にもと要求する。\n"
                  "動機は酒場で見た錬成への興味だった。\n"), repr(v)
+
+
+def test_continuation_lines_rejoin():
+    # 文末句読点なしの行は次行と同文 → 結合してから折り直す（単語途中分割＋数文字孤立行を作らない）
+    p = make_project(WORK / "case8", {
+        "plot/plot-ch01.toml": (
+            "id = \"plot-ch01\"\ncontent = '''\n"
+            "スケベジジイ、流れるような手つきでローションを手に塗りメルルの乳を揉み感触を確か\n"
+            "める。\n"
+            "'''\n"
+        ),
+    })
+    code, out = run(p)
+    assert code == 0, out
+    v = tomllib.loads((p / "plot" / "plot-ch01.toml").read_text(encoding="utf-8"))["content"]
+    # 尻尾切り回避のため読点で折る（短い頭＋長い尻尾。単語途中分割よりまし）
+    assert v == ("スケベジジイ、\n"
+                 "流れるような手つきでローションを手に塗りメルルの乳を揉み感触を確かめる。\n"), repr(v)
+    assert "確か\nめる" not in v  # 単語途中分割なし
+    # 冪等
+    code, out = run(p)
+    assert "変更なし" in out, out
