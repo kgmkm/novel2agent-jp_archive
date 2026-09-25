@@ -1,3 +1,8 @@
+# novel2agent-jp_archive（開発履歴の保存庫・更新停止）
+
+> **このリポジトリは保存庫です。開発本体は [novel2agent-jp](https://github.com/kgmkm/novel2agent-jp) です（star・fork 継承のため旧 `novel2hermes_jp` を改名したもの）。新規利用は本体へどうぞ。**
+> 以下は v0.4.7 時点の内容をそのまま残しています。
+
 # novel2agent-jp
 
 AIコーディングエージェントと一緒に日本語の小説を作るためのスキルです。旧スキル `novel2hermes_jp` の後継です。
